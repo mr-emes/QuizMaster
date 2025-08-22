@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuizMaster Pro - Portal Siswa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -33,6 +33,24 @@
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Nunito', sans-serif; }
         
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         .pulse-animation {
             animation: pulse 2s infinite;
         }
@@ -41,42 +59,96 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
-        .slide-in {
-            animation: slideIn 0.5s ease-out;
+
+        .quiz-option {
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
         
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .quiz-option:hover {
+            transform: translateX(5px);
+            background-color: #f3f4f6;
         }
         
-        .bounce-in {
-            animation: bounceIn 0.6s ease-out;
+        .quiz-option.selected {
+            background-color: #3b82f6;
+            color: white;
+            transform: translateX(5px);
         }
         
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); opacity: 1; }
+        .quiz-option.correct {
+            background-color: #10b981;
+            color: white;
         }
         
+        .quiz-option.incorrect {
+            background-color: #ef4444;
+            color: white;
+        }
+
         .timer-warning {
-            animation: timerPulse 1s infinite;
+            animation: shake 0.5s ease-in-out infinite;
         }
         
-        @keyframes timerPulse {
-            0%, 100% { background-color: #ef4444; }
-            50% { background-color: #dc2626; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
+
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .exam-warning {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .leaderboard-item {
+            animation: slideInUp 0.5s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .mode-live { background: linear-gradient(135deg, #10b981, #059669); }
+        .mode-assignment { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .mode-exam { background: linear-gradient(135deg, #ef4444, #dc2626); }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
     <!-- Login Screen -->
     <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-indigo-700">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md bounce-in">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
             <div class="text-center mb-8">
                 <div class="text-4xl mb-4">🎓</div>
                 <h2 class="text-3xl font-bold text-gray-800">Portal Siswa</h2>
@@ -86,15 +158,59 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">NIS (Nomor Induk Siswa)</label>
-                    <input type="text" id="studentNIS" placeholder="Contoh: 2024001" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="text" id="studentNIS" placeholder="Masukkan NIS Anda" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                    <input type="text" id="studentName" placeholder="Masukkan Nama Lengkap" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 </div>
                 
                 <button onclick="studentLogin()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all">
-                    🚀 Masuk Sistem
+                    🚀 Masuk Portal
                 </button>
                 
-                <div class="text-xs text-gray-500 text-center mt-4">
-                    Demo NIS: 2024001, 2024002, 2024003, 2024004, 2024005
+                <div class="text-center">
+                    <div class="text-sm text-gray-500 mb-2">atau</div>
+                    <button onclick="showJoinGameModal()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all">
+                        🎮 Join Game Langsung
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Game Modal -->
+    <div id="joinGameModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Join Game</h3>
+                <button onclick="hideJoinGameModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Kode Game</label>
+                    <input type="text" id="gameCodeInput" placeholder="Masukkan kode game" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-lg font-bold uppercase" maxlength="6">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">NIS</label>
+                    <input type="text" id="quickNIS" placeholder="Masukkan NIS" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama</label>
+                    <input type="text" id="quickName" placeholder="Masukkan nama" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+                
+                <div class="flex space-x-4 pt-4">
+                    <button onclick="hideJoinGameModal()" class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button onclick="joinGameDirect()" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors">
+                        🎮 Join Game
+                    </button>
                 </div>
             </div>
         </div>
@@ -102,188 +218,301 @@
 
     <!-- Main Dashboard -->
     <div id="dashboardScreen" class="min-h-screen bg-gray-50 hidden">
-        <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
-            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-8">
                         <h1 class="text-xl font-bold text-gray-900">🎯 QuizMaster Pro</h1>
-                        <div class="hidden sm:block">
-                            <span class="text-sm text-gray-600">Portal Siswa</span>
+                        <div class="hidden md:flex space-x-4">
+                            <button onclick="showSection('dashboard')" class="nav-btn px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">Dashboard</button>
+                            <button onclick="showSection('assignments')" class="nav-btn px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 rounded-lg">Tugas/PR</button>
+                            <button onclick="showSection('exams')" class="nav-btn px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 rounded-lg">Ujian</button>
+                            <button onclick="showSection('history')" class="nav-btn px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 rounded-lg">Riwayat</button>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <div class="text-right">
-                            <div class="text-sm font-medium text-gray-900" id="studentName">-</div>
-                            <div class="text-xs text-gray-500" id="studentClass">-</div>
-                        </div>
-                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700 text-sm">Keluar</button>
+                        <span class="text-sm text-gray-600" id="studentInfo">Siswa</span>
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700">Keluar</button>
                     </div>
                 </div>
             </div>
-        </header>
+        </nav>
 
-        <!-- Join Game Section -->
-        <div id="joinGameSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">Bergabung ke Quiz</h2>
-                <p class="text-gray-600">Masukkan kode game yang diberikan guru untuk mulai quiz</p>
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Siswa</h2>
+                <p class="text-gray-600">Selamat datang di portal quiz interaktif</p>
             </div>
             
-            <div class="bg-white rounded-2xl shadow-sm p-8 max-w-md mx-auto">
-                <div class="space-y-6">
+            <!-- Join Game Card -->
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-8 text-white mb-8 card-hover">
+                <div class="flex items-center justify-between">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Kode Game</label>
-                        <input type="text" id="gameCodeInput" placeholder="Contoh: ABC123" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg font-mono uppercase" maxlength="6">
+                        <h3 class="text-2xl font-bold mb-2">🎮 Join Live Quiz</h3>
+                        <p class="text-green-100 mb-4">Masukkan kode game untuk bergabung dengan quiz live</p>
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="dashboardGameCode" placeholder="Kode Game" class="px-4 py-2 rounded-lg text-gray-900 font-bold text-center uppercase" maxlength="6">
+                            <button onclick="joinGameFromDashboard()" class="bg-white text-green-600 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors">
+                                Join Game
+                            </button>
+                        </div>
                     </div>
-                    
-                    <button onclick="joinGame()" class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-blue-700 transition-all">
-                        🎮 Bergabung ke Game
-                    </button>
+                    <div class="text-6xl opacity-20">🎯</div>
                 </div>
             </div>
             
-            <!-- Recent Games -->
-            <div class="mt-12">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Riwayat Quiz</h3>
-                <div id="recentGamesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Recent games will be populated here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Waiting Room -->
-        <div id="waitingRoomSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
-            <div class="text-center">
-                <div class="bg-white rounded-2xl shadow-sm p-8">
-                    <div class="text-6xl mb-4 pulse-animation">⏳</div>
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Menunggu Game Dimulai</h2>
-                    <p class="text-gray-600 mb-6">Guru sedang mempersiapkan quiz. Mohon tunggu sebentar...</p>
-                    
-                    <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <span class="text-gray-500">Kode Game:</span>
-                                <div class="font-mono font-bold text-lg" id="currentGameCode">-</div>
-                            </div>
-                            <div>
-                                <span class="text-gray-500">Mata Pelajaran:</span>
-                                <div class="font-medium" id="currentSubject">-</div>
-                            </div>
-                            <div>
-                                <span class="text-gray-500">Materi:</span>
-                                <div class="font-medium" id="currentMaterial">-</div>
-                            </div>
-                            <div>
-                                <span class="text-gray-500">Pemain:</span>
-                                <div class="font-medium" id="playerCount">-</div>
-                            </div>
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+                    <div class="flex items-center">
+                        <div class="text-3xl mr-4">📝</div>
+                        <div>
+                            <p class="text-sm text-gray-600">Tugas Tersedia</p>
+                            <p class="text-2xl font-bold text-gray-900" id="availableAssignments">0</p>
                         </div>
-                    </div>
-                    
-                    <button onclick="leaveGame()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                        🚪 Keluar dari Game
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quiz Section -->
-        <div id="quizSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
-            <!-- Quiz Header -->
-            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-xl font-bold text-gray-900" id="quizTitle">Quiz Matematika</h2>
-                        <p class="text-gray-600" id="quizInfo">Soal 1 dari 10</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-bold text-blue-600" id="timer">30</div>
-                        <div class="text-xs text-gray-500">detik</div>
                     </div>
                 </div>
                 
-                <!-- Progress Bar -->
-                <div class="mt-4">
-                    <div class="bg-gray-200 rounded-full h-2">
-                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="progressBar" style="width: 10%"></div>
+                <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+                    <div class="flex items-center">
+                        <div class="text-3xl mr-4">🎯</div>
+                        <div>
+                            <p class="text-sm text-gray-600">Ujian Mendatang</p>
+                            <p class="text-2xl font-bold text-gray-900" id="upcomingExams">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+                    <div class="flex items-center">
+                        <div class="text-3xl mr-4">📊</div>
+                        <div>
+                            <p class="text-sm text-gray-600">Rata-rata Nilai</p>
+                            <p class="text-2xl font-bold text-gray-900" id="averageScore">0</p>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Question Card -->
-            <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
-                <div class="text-center mb-8">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-4" id="questionText">Berapa hasil dari 2 + 2?</h3>
+            <!-- Recent Activities -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Aktivitas Terbaru</h3>
+                <div id="recentActivities" class="space-y-3">
+                    <!-- Recent activities will be populated here -->
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="optionsContainer">
-                    <!-- Options will be populated here -->
-                </div>
-            </div>
-            
-            <!-- Quiz Controls -->
-            <div class="text-center">
-                <button id="nextButton" onclick="nextQuestion()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                    Lanjut ➡️
-                </button>
             </div>
         </div>
 
-        <!-- Results Section -->
-        <div id="resultsSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
-            <div class="text-center">
-                <div class="bg-white rounded-2xl shadow-sm p-8">
-                    <div class="text-6xl mb-4" id="resultEmoji">🎉</div>
-                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Quiz Selesai!</h2>
-                    <p class="text-gray-600 mb-8">Terima kasih telah mengikuti quiz</p>
-                    
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                            <div>
-                                <div class="text-2xl font-bold text-blue-600" id="finalScore">85</div>
-                                <div class="text-sm text-gray-600">Nilai Akhir</div>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold text-green-600" id="correctAnswers">8</div>
-                                <div class="text-sm text-gray-600">Jawaban Benar</div>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-bold text-gray-600" id="totalQuestions">10</div>
-                                <div class="text-sm text-gray-600">Total Soal</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <button onclick="viewDetailedResults()" class="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors">
-                            📊 Lihat Detail Jawaban
-                        </button>
-                        <br>
-                        <button onclick="backToHome()" class="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors">
-                            🏠 Kembali ke Beranda
-                        </button>
-                    </div>
+        <!-- Assignments Section -->
+        <div id="assignmentsSection" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Tugas & PR</h2>
+                <p class="text-gray-600">Daftar tugas yang perlu dikerjakan</p>
+            </div>
+            
+            <div id="assignmentsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Assignments will be populated here -->
+            </div>
+        </div>
+
+        <!-- Exams Section -->
+        <div id="examsSection" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Ujian</h2>
+                <p class="text-gray-600">Daftar ujian yang tersedia</p>
+            </div>
+            
+            <div id="examsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Exams will be populated here -->
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="historySection" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Riwayat Quiz</h2>
+                <p class="text-gray-600">Hasil quiz yang telah dikerjakan</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quiz</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- History will be populated here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Detailed Results Modal -->
-    <div id="detailedResultsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-gray-900">Detail Jawaban Quiz</h3>
-                <button onclick="hideDetailedResults()" class="text-gray-500 hover:text-gray-700">✕</button>
+    <!-- Quiz Game Screen -->
+    <div id="gameScreen" class="min-h-screen bg-gray-900 text-white hidden">
+        <!-- Game Header -->
+        <div class="bg-gray-800 p-4">
+            <div class="max-w-4xl mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div id="gameInfo" class="text-sm">
+                        <div class="font-semibold" id="gameTitle">Quiz Title</div>
+                        <div class="text-gray-400" id="gameSubject">Subject - Material</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <div class="text-center">
+                        <div class="text-xs text-gray-400">Soal</div>
+                        <div class="font-bold" id="questionCounter">1/10</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-xs text-gray-400">Skor</div>
+                        <div class="font-bold text-green-400" id="currentScore">0</div>
+                    </div>
+                    
+                    <div class="text-center" id="timerContainer">
+                        <div class="text-xs text-gray-400">Waktu</div>
+                        <div class="font-bold text-yellow-400" id="timer">30</div>
+                    </div>
+                    
+                    <button onclick="exitGame()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm transition-colors">
+                        Keluar
+                    </button>
+                </div>
             </div>
-            
-            <div id="detailedResultsContent" class="space-y-6">
-                <!-- Detailed results will be populated here -->
+        </div>
+
+        <!-- Waiting Room -->
+        <div id="waitingRoom" class="flex items-center justify-center min-h-screen">
+            <div class="text-center">
+                <div class="text-6xl mb-6 pulse-animation">🎮</div>
+                <h2 class="text-3xl font-bold mb-4">Menunggu Game Dimulai...</h2>
+                <p class="text-gray-400 mb-6">Kode Game: <span class="font-bold text-2xl" id="displayGameCode"></span></p>
+                <div class="bg-gray-800 rounded-xl p-6 max-w-md mx-auto">
+                    <h3 class="font-semibold mb-4">Pemain yang Bergabung:</h3>
+                    <div id="playersList" class="space-y-2">
+                        <!-- Players will be listed here -->
+                    </div>
+                </div>
             </div>
-            
-            <div class="mt-8 text-center">
-                <button onclick="hideDetailedResults()" class="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors">
-                    Tutup
+        </div>
+
+        <!-- Question Screen -->
+        <div id="questionScreen" class="hidden">
+            <div class="max-w-4xl mx-auto p-6">
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="bg-gray-700 rounded-full h-2">
+                        <div class="progress-bar bg-blue-500 h-2 rounded-full" id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Question -->
+                <div class="bg-gray-800 rounded-2xl p-8 mb-6">
+                    <h2 class="text-2xl font-bold mb-6" id="questionText">Question will appear here</h2>
+                    
+                    <!-- Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="optionsContainer">
+                        <!-- Options will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Navigation -->
+                <div class="flex justify-between items-center">
+                    <button id="prevButton" onclick="previousQuestion()" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-xl transition-colors hidden">
+                        ← Sebelumnya
+                    </button>
+                    
+                    <div class="flex-1"></div>
+                    
+                    <button id="nextButton" onclick="nextQuestion()" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl transition-colors hidden">
+                        Selanjutnya →
+                    </button>
+                    
+                    <button id="submitButton" onclick="submitQuiz()" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl transition-colors hidden">
+                        Selesai
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboardScreen" class="hidden">
+            <div class="max-w-4xl mx-auto p-6">
+                <div class="text-center mb-8">
+                    <h2 class="text-4xl font-bold mb-4">🏆 Leaderboard</h2>
+                    <p class="text-gray-400">Hasil Quiz Live</p>
+                </div>
+                
+                <div id="leaderboardList" class="space-y-4">
+                    <!-- Leaderboard will be populated here -->
+                </div>
+                
+                <div class="text-center mt-8">
+                    <button onclick="exitGame()" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-xl transition-colors">
+                        Kembali ke Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="hidden">
+            <div class="max-w-4xl mx-auto p-6">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4" id="resultEmoji">🎉</div>
+                    <h2 class="text-4xl font-bold mb-4" id="resultTitle">Quiz Selesai!</h2>
+                    <p class="text-gray-400 mb-6" id="resultSubtitle">Terima kasih telah mengerjakan quiz</p>
+                    
+                    <div class="bg-gray-800 rounded-2xl p-8 max-w-md mx-auto">
+                        <div class="text-6xl font-bold text-green-400 mb-2" id="finalScore">85</div>
+                        <div class="text-gray-400 mb-4">Nilai Akhir</div>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="bg-gray-700 rounded-lg p-3">
+                                <div class="text-green-400 font-bold" id="correctAnswers">8</div>
+                                <div class="text-gray-400">Benar</div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-3">
+                                <div class="text-red-400 font-bold" id="wrongAnswers">2</div>
+                                <div class="text-gray-400">Salah</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button onclick="exitGame()" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-xl transition-colors">
+                        Kembali ke Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Warning Overlay -->
+    <div id="examWarningOverlay" class="fullscreen-overlay hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-md mx-auto text-center">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Peringatan Ujian!</h3>
+            <p class="text-gray-600 mb-6">Anda mencoba keluar dari mode ujian. Ini akan dicatat sebagai pelanggaran.</p>
+            <div class="space-y-3">
+                <button onclick="returnToExam()" class="w-full bg-green-600 text-white py-3 px-6 rounded-xl hover:bg-green-700 transition-colors">
+                    Kembali ke Ujian
+                </button>
+                <button onclick="forceExitExam()" class="w-full bg-red-600 text-white py-3 px-6 rounded-xl hover:bg-red-700 transition-colors">
+                    Keluar Paksa (Ujian Berakhir)
                 </button>
             </div>
         </div>
@@ -295,11 +524,18 @@
             currentStudent: null,
             currentGame: null,
             currentQuiz: null,
-            currentQuestionIndex: 0,
-            userAnswers: [],
-            timer: null,
-            timeLeft: 30,
-            gameListener: null
+            currentQuestion: 0,
+            answers: [],
+            score: 0,
+            timeLeft: 0,
+            timerInterval: null,
+            gameMode: 'live',
+            examWarnings: 0,
+            examStartTime: null,
+            isFullscreen: false,
+            assignments: [],
+            exams: [],
+            history: []
         };
 
         // Firebase Database wrapper
@@ -310,6 +546,7 @@
                     return true;
                 } catch (error) {
                     console.error('❌ Firebase connection failed:', error);
+                    console.log('📱 Using offline mode');
                     return false;
                 }
             },
@@ -327,22 +564,12 @@
                     return null;
                 } catch (error) {
                     console.error('Error getting student:', error);
-                    // Fallback to sample data
-                    const sampleStudents = {
-                        '2024001': { name: 'Ahmad Fauzi', class: '7A' },
-                        '2024002': { name: 'Siti Nurhaliza', class: '7A' },
-                        '2024003': { name: 'Budi Santoso', class: '7B' },
-                        '2024004': { name: 'Rina Kartika', class: '7B' },
-                        '2024005': { name: 'Doni Pratama', class: '8A' }
+                    // Fallback for demo
+                    return {
+                        nis: nis,
+                        name: 'Demo Student',
+                        class: '7A'
                     };
-                    
-                    if (sampleStudents[nis]) {
-                        return {
-                            nis: nis,
-                            ...sampleStudents[nis]
-                        };
-                    }
-                    return null;
                 }
             },
             
@@ -369,41 +596,39 @@
                     const gameRef = ref(database, `games/${gameCode}`);
                     const snapshot = await get(gameRef);
                     
-                    if (!snapshot.exists()) {
-                        throw new Error('Game tidak ditemukan');
-                    }
-                    
-                    const gameData = snapshot.val();
-                    const players = gameData.players || [];
-                    
-                    // Check if student already joined
-                    if (!players.find(p => p.nis === student.nis)) {
-                        players.push({
-                            nis: student.nis,
-                            name: student.name,
-                            class: student.class,
-                            joinedAt: Date.now()
-                        });
+                    if (snapshot.exists()) {
+                        const gameData = snapshot.val();
+                        const players = gameData.players || [];
                         
-                        await update(gameRef, { players: players });
+                        // Check if student already joined
+                        const existingPlayer = players.find(p => p.nis === student.nis);
+                        if (!existingPlayer) {
+                            players.push({
+                                nis: student.nis,
+                                name: student.name,
+                                class: student.class,
+                                joinedAt: Date.now(),
+                                score: 0
+                            });
+                            
+                            await update(ref(database, `games/${gameCode}`), {
+                                players: players
+                            });
+                        }
+                        
+                        return true;
                     }
-                    
-                    return {
-                        gameCode: gameCode,
-                        ...gameData,
-                        players: players
-                    };
+                    return false;
                 } catch (error) {
                     console.error('Error joining game:', error);
-                    throw error;
+                    return true; // Allow offline mode
                 }
             },
             
             async submitAnswer(gameCode, nis, questionIndex, answer, timeSpent) {
                 try {
                     const { database, ref, set } = window.firebase;
-                    const answerRef = ref(database, `answers/${gameCode}/${nis}/${questionIndex}`);
-                    await set(answerRef, {
+                    await set(ref(database, `answers/${gameCode}/${nis}/${questionIndex}`), {
                         answer: answer,
                         timeSpent: timeSpent,
                         timestamp: Date.now()
@@ -411,42 +636,104 @@
                     return true;
                 } catch (error) {
                     console.error('Error submitting answer:', error);
-                    return false;
+                    return true; // Allow offline mode
                 }
             },
             
-            async submitFinalScore(gameCode, nis, score, answers) {
+            async submitFinalScore(gameCode, nis, score, answers, completedAt) {
                 try {
                     const { database, ref, set } = window.firebase;
-                    const gradeRef = ref(database, `grades/${gameCode}/${nis}`);
-                    await set(gradeRef, {
+                    await set(ref(database, `grades/${gameCode}/${nis}`), {
                         score: score,
                         answers: answers,
-                        completedAt: Date.now()
+                        completedAt: completedAt,
+                        nis: nis
                     });
                     return true;
                 } catch (error) {
                     console.error('Error submitting final score:', error);
-                    return false;
+                    return true; // Allow offline mode
                 }
             },
             
-            listenToGame(gameCode, callback) {
+            async getAssignments(studentClass) {
                 try {
-                    const { database, ref, onValue } = window.firebase;
-                    const gameRef = ref(database, `games/${gameCode}`);
-                    const unsubscribe = onValue(gameRef, (snapshot) => {
-                        if (snapshot.exists()) {
-                            callback({
-                                gameCode: gameCode,
-                                ...snapshot.val()
-                            });
-                        }
-                    });
-                    return unsubscribe;
+                    const { database, ref, get } = window.firebase;
+                    const snapshot = await get(ref(database, 'games'));
+                    const assignments = [];
+                    
+                    if (snapshot.exists()) {
+                        const games = snapshot.val();
+                        Object.keys(games).forEach(gameCode => {
+                            const game = games[gameCode];
+                            if (game.mode === 'assignment' && 
+                                game.class === studentClass && 
+                                !game.completed) {
+                                assignments.push({
+                                    gameCode: gameCode,
+                                    ...game
+                                });
+                            }
+                        });
+                    }
+                    
+                    return assignments;
                 } catch (error) {
-                    console.error('Error listening to game:', error);
-                    return null;
+                    console.error('Error getting assignments:', error);
+                    return [];
+                }
+            },
+            
+            async getExams(studentClass) {
+                try {
+                    const { database, ref, get } = window.firebase;
+                    const snapshot = await get(ref(database, 'games'));
+                    const exams = [];
+                    
+                    if (snapshot.exists()) {
+                        const games = snapshot.val();
+                        Object.keys(games).forEach(gameCode => {
+                            const game = games[gameCode];
+                            if (game.mode === 'exam' && 
+                                game.class === studentClass && 
+                                !game.completed) {
+                                exams.push({
+                                    gameCode: gameCode,
+                                    ...game
+                                });
+                            }
+                        });
+                    }
+                    
+                    return exams;
+                } catch (error) {
+                    console.error('Error getting exams:', error);
+                    return [];
+                }
+            },
+            
+            async getStudentHistory(nis) {
+                try {
+                    const { database, ref, get } = window.firebase;
+                    const snapshot = await get(ref(database, 'grades'));
+                    const history = [];
+                    
+                    if (snapshot.exists()) {
+                        const grades = snapshot.val();
+                        Object.keys(grades).forEach(gameCode => {
+                            if (grades[gameCode][nis]) {
+                                history.push({
+                                    gameCode: gameCode,
+                                    ...grades[gameCode][nis]
+                                });
+                            }
+                        });
+                    }
+                    
+                    return history.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+                } catch (error) {
+                    console.error('Error getting student history:', error);
+                    return [];
                 }
             }
         };
@@ -454,447 +741,1016 @@
         // Authentication
         async function studentLogin() {
             const nis = document.getElementById('studentNIS').value.trim();
+            const name = document.getElementById('studentName').value.trim();
             
-            if (!nis) {
-                alert('Mohon masukkan NIS!');
+            if (!nis || !name) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi NIS dan nama lengkap.',
+                    confirmButtonColor: '#3b82f6'
+                });
                 return;
             }
             
             try {
+                Swal.fire({
+                    title: 'Memverifikasi Data...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
                 await db.init();
                 const student = await db.getStudent(nis);
                 
-                if (student) {
+                if (student && student.name.toLowerCase().includes(name.toLowerCase())) {
                     appState.currentStudent = student;
                     showDashboard();
+                    Swal.close();
                 } else {
-                    alert('NIS tidak ditemukan! Hubungi guru untuk mendaftarkan akun.');
+                    // Allow demo access
+                    appState.currentStudent = {
+                        nis: nis,
+                        name: name,
+                        class: '7A'
+                    };
+                    showDashboard();
+                    Swal.close();
                 }
             } catch (error) {
-                alert('Gagal login. Coba lagi.');
-                console.error('Login error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Gagal!',
+                    text: 'Terjadi kesalahan saat login. Silakan coba lagi.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         }
 
         function logout() {
-            // Clean up listeners
-            if (appState.gameListener) {
-                appState.gameListener();
-                appState.gameListener = null;
-            }
-            
-            // Clear timer
-            if (appState.timer) {
-                clearInterval(appState.timer);
-                appState.timer = null;
-            }
-            
-            // Reset state
-            appState.currentStudent = null;
-            appState.currentGame = null;
-            appState.currentQuiz = null;
-            appState.currentQuestionIndex = 0;
-            appState.userAnswers = [];
-            
-            // Show login screen
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('dashboardScreen').classList.add('hidden');
+            Swal.fire({
+                title: 'Konfirmasi Logout',
+                text: 'Yakin ingin keluar dari portal?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    appState.currentStudent = null;
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                    document.getElementById('dashboardScreen').classList.add('hidden');
+                    document.getElementById('gameScreen').classList.add('hidden');
+                }
+            });
         }
 
         // Navigation
         function showDashboard() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('dashboardScreen').classList.remove('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
             
-            // Update student info
-            document.getElementById('studentName').textContent = appState.currentStudent.name;
-            document.getElementById('studentClass').textContent = `Kelas ${appState.currentStudent.class}`;
+            document.getElementById('studentInfo').textContent = `${appState.currentStudent.name} - ${appState.currentStudent.class}`;
+            showSection('dashboard');
+            loadDashboardData();
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('[id$="Section"]').forEach(section => {
+                section.classList.add('hidden');
+            });
             
-            showJoinGameSection();
-        }
-
-        function showJoinGameSection() {
-            hideAllSections();
-            document.getElementById('joinGameSection').classList.remove('hidden');
-            loadRecentGames();
-        }
-
-        function showWaitingRoom() {
-            hideAllSections();
-            document.getElementById('waitingRoomSection').classList.remove('hidden');
-        }
-
-        function showQuizSection() {
-            hideAllSections();
-            document.getElementById('quizSection').classList.remove('hidden');
-        }
-
-        function showResultsSection() {
-            hideAllSections();
-            document.getElementById('resultsSection').classList.remove('hidden');
-        }
-
-        function hideAllSections() {
-            document.getElementById('joinGameSection').classList.add('hidden');
-            document.getElementById('waitingRoomSection').classList.add('hidden');
-            document.getElementById('quizSection').classList.add('hidden');
-            document.getElementById('resultsSection').classList.add('hidden');
-        }
-
-        // Game functions
-        async function joinGame() {
-            const gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
             
-            if (!gameCode) {
-                alert('Mohon masukkan kode game!');
+            // Update navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-blue-600', 'bg-blue-50');
+                btn.classList.add('text-gray-600');
+            });
+            
+            if (event && event.target) {
+                event.target.classList.remove('text-gray-600');
+                event.target.classList.add('text-blue-600', 'bg-blue-50');
+            }
+            
+            // Load section data
+            switch(sectionName) {
+                case 'dashboard':
+                    loadDashboardData();
+                    break;
+                case 'assignments':
+                    loadAssignments();
+                    break;
+                case 'exams':
+                    loadExams();
+                    break;
+                case 'history':
+                    loadHistory();
+                    break;
+            }
+        }
+
+        // Dashboard functions
+        async function loadDashboardData() {
+            if (!appState.currentStudent) return;
+            
+            try {
+                // Load assignments
+                const assignments = await db.getAssignments(appState.currentStudent.class);
+                appState.assignments = assignments;
+                document.getElementById('availableAssignments').textContent = assignments.length;
+                
+                // Load exams
+                const exams = await db.getExams(appState.currentStudent.class);
+                appState.exams = exams;
+                document.getElementById('upcomingExams').textContent = exams.length;
+                
+                // Load history and calculate average
+                const history = await db.getStudentHistory(appState.currentStudent.nis);
+                appState.history = history;
+                
+                if (history.length > 0) {
+                    const average = history.reduce((sum, item) => sum + item.score, 0) / history.length;
+                    document.getElementById('averageScore').textContent = Math.round(average);
+                } else {
+                    document.getElementById('averageScore').textContent = '0';
+                }
+                
+                // Load recent activities
+                loadRecentActivities();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function loadRecentActivities() {
+            const container = document.getElementById('recentActivities');
+            container.innerHTML = '';
+            
+            if (appState.history.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm">Belum ada aktivitas</p>';
                 return;
             }
             
-            if (gameCode.length !== 6) {
-                alert('Kode game harus 6 karakter!');
+            const recentActivities = appState.history.slice(0, 5);
+            recentActivities.forEach(activity => {
+                const activityDiv = document.createElement('div');
+                activityDiv.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                
+                const scoreClass = activity.score >= 80 ? 'text-green-600' : activity.score >= 60 ? 'text-yellow-600' : 'text-red-600';
+                
+                activityDiv.innerHTML = `
+                    <div>
+                        <div class="font-medium text-sm">Quiz Selesai</div>
+                        <div class="text-xs text-gray-500">${new Date(activity.completedAt).toLocaleDateString('id-ID')}</div>
+                    </div>
+                    <div class="text-sm font-bold ${scoreClass}">${activity.score}</div>
+                `;
+                container.appendChild(activityDiv);
+            });
+        }
+
+        // Join Game functions
+        function showJoinGameModal() {
+            document.getElementById('joinGameModal').classList.remove('hidden');
+        }
+
+        function hideJoinGameModal() {
+            document.getElementById('joinGameModal').classList.add('hidden');
+            document.getElementById('gameCodeInput').value = '';
+            document.getElementById('quickNIS').value = '';
+            document.getElementById('quickName').value = '';
+        }
+
+        async function joinGameDirect() {
+            const gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+            const nis = document.getElementById('quickNIS').value.trim();
+            const name = document.getElementById('quickName').value.trim();
+            
+            if (!gameCode || !nis || !name) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua data.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            appState.currentStudent = { nis, name, class: 'Unknown' };
+            await joinGame(gameCode);
+            hideJoinGameModal();
+        }
+
+        async function joinGameFromDashboard() {
+            const gameCode = document.getElementById('dashboardGameCode').value.trim().toUpperCase();
+            
+            if (!gameCode) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Kode Game Kosong!',
+                    text: 'Mohon masukkan kode game.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            await joinGame(gameCode);
+            document.getElementById('dashboardGameCode').value = '';
+        }
+
+        async function joinGame(gameCode) {
+            if (!appState.currentStudent) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Data siswa tidak ditemukan.',
+                    confirmButtonColor: '#ef4444'
+                });
                 return;
             }
             
             try {
-                const game = await db.joinGame(gameCode, appState.currentStudent);
-                appState.currentGame = game;
-                appState.currentQuiz = game.quiz;
-                
-                // Update waiting room info
-                document.getElementById('currentGameCode').textContent = gameCode;
-                document.getElementById('currentSubject').textContent = game.subject || '-';
-                document.getElementById('currentMaterial').textContent = game.material || '-';
-                document.getElementById('playerCount').textContent = game.players?.length || 0;
-                
-                // Start listening to game updates
-                appState.gameListener = db.listenToGame(gameCode, (updatedGame) => {
-                    appState.currentGame = updatedGame;
-                    
-                    if (updatedGame.started && !updatedGame.completed) {
-                        startQuiz();
-                    } else if (updatedGame.completed) {
-                        // Game ended by admin
-                        alert('Game telah diakhiri oleh guru.');
-                        backToHome();
+                Swal.fire({
+                    title: 'Bergabung ke Game...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
                     }
-                    
-                    // Update player count
-                    document.getElementById('playerCount').textContent = updatedGame.players?.length || 0;
                 });
                 
-                showWaitingRoom();
-                alert(`Berhasil bergabung ke game ${gameCode}! 🎉`);
+                const game = await db.getGame(gameCode);
                 
-            } catch (error) {
-                alert('Gagal bergabung ke game. Periksa kode game atau hubungi guru.');
-                console.error('Join game error:', error);
-            }
-        }
-
-        function leaveGame() {
-            if (confirm('Yakin ingin keluar dari game?')) {
-                if (appState.gameListener) {
-                    appState.gameListener();
-                    appState.gameListener = null;
+                if (!game) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Game Tidak Ditemukan!',
+                        text: 'Kode game tidak valid atau game sudah berakhir.',
+                        confirmButtonColor: '#ef4444'
+                    });
+                    return;
                 }
                 
-                appState.currentGame = null;
-                appState.currentQuiz = null;
-                showJoinGameSection();
+                // Check if student's class matches
+                if (game.class !== appState.currentStudent.class && game.class !== 'All') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Kelas Tidak Sesuai!',
+                        text: `Game ini khusus untuk kelas ${game.class}.`,
+                        confirmButtonColor: '#f59e0b'
+                    });
+                    return;
+                }
+                
+                const joined = await db.joinGame(gameCode, appState.currentStudent);
+                
+                if (joined) {
+                    appState.currentGame = game;
+                    appState.currentQuiz = game.quiz;
+                    appState.gameMode = game.mode;
+                    
+                    Swal.close();
+                    startGame();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Bergabung!',
+                        text: 'Tidak dapat bergabung ke game.',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Terjadi kesalahan saat bergabung ke game.',
+                    confirmButtonColor: '#ef4444'
+                });
+                console.error('Error joining game:', error);
             }
         }
 
-        // Quiz functions
+        // Game functions
+        function startGame() {
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            
+            // Setup game info
+            document.getElementById('gameTitle').textContent = appState.currentQuiz.title;
+            document.getElementById('gameSubject').textContent = `${appState.currentQuiz.subject} - ${appState.currentQuiz.material}`;
+            document.getElementById('displayGameCode').textContent = appState.currentGame.gameCode;
+            
+            // Initialize game state
+            appState.currentQuestion = 0;
+            appState.answers = [];
+            appState.score = 0;
+            appState.examWarnings = 0;
+            
+            // Setup mode-specific features
+            if (appState.gameMode === 'exam') {
+                setupExamMode();
+            }
+            
+            // Show waiting room for live games, start directly for others
+            if (appState.gameMode === 'live') {
+                showWaitingRoom();
+            } else {
+                startQuiz();
+            }
+        }
+
+        function showWaitingRoom() {
+            document.getElementById('waitingRoom').classList.remove('hidden');
+            document.getElementById('questionScreen').classList.add('hidden');
+            
+            // Simulate players joining (in real app, this would be real-time)
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = `
+                <div class="text-sm text-gray-400">👤 ${appState.currentStudent.name}</div>
+                <div class="text-sm text-gray-400">👤 Ahmad Fauzi</div>
+                <div class="text-sm text-gray-400">👤 Siti Nurhaliza</div>
+            `;
+            
+            // Auto start after 3 seconds (in real app, admin would start)
+            setTimeout(() => {
+                startQuiz();
+            }, 3000);
+        }
+
         function startQuiz() {
-            if (!appState.currentQuiz || !appState.currentQuiz.questions) {
-                alert('Quiz tidak valid!');
-                return;
-            }
+            document.getElementById('waitingRoom').classList.add('hidden');
+            document.getElementById('questionScreen').classList.remove('hidden');
             
-            appState.currentQuestionIndex = 0;
-            appState.userAnswers = [];
+            // Setup question counter
+            const totalQuestions = appState.currentQuiz.questions.length;
+            document.getElementById('questionCounter').textContent = `1/${totalQuestions}`;
             
-            showQuizSection();
-            displayQuestion();
+            // Initialize answers array
+            appState.answers = new Array(totalQuestions).fill(null);
+            
+            // Show first question
+            showQuestion(0);
         }
 
-        function displayQuestion() {
-            const quiz = appState.currentQuiz;
-            const questionIndex = appState.currentQuestionIndex;
-            const question = quiz.questions[questionIndex];
+        function showQuestion(index) {
+            const question = appState.currentQuiz.questions[index];
+            if (!question) return;
             
-            if (!question) {
-                finishQuiz();
-                return;
-            }
-            
-            // Update quiz info
-            document.getElementById('quizTitle').textContent = quiz.title || 'Quiz';
-            document.getElementById('quizInfo').textContent = `Soal ${questionIndex + 1} dari ${quiz.questions.length}`;
-            document.getElementById('questionText').textContent = question.question;
+            appState.currentQuestion = index;
             
             // Update progress bar
-            const progress = ((questionIndex + 1) / quiz.questions.length) * 100;
+            const progress = ((index + 1) / appState.currentQuiz.questions.length) * 100;
             document.getElementById('progressBar').style.width = `${progress}%`;
             
-            // Display options
+            // Update question counter
+            document.getElementById('questionCounter').textContent = `${index + 1}/${appState.currentQuiz.questions.length}`;
+            
+            // Show question text
+            document.getElementById('questionText').textContent = question.question;
+            
+            // Show options
             const optionsContainer = document.getElementById('optionsContainer');
             optionsContainer.innerHTML = '';
             
-            question.options.forEach((option, index) => {
-                const optionButton = document.createElement('button');
-                optionButton.className = 'option-btn p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left';
-                optionButton.innerHTML = `
+            question.options.forEach((option, optionIndex) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = `quiz-option p-4 border-2 border-gray-600 rounded-xl ${appState.answers[index] === optionIndex ? 'selected' : ''}`;
+                optionDiv.onclick = () => selectOption(optionIndex);
+                optionDiv.innerHTML = `
                     <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center font-semibold">
-                            ${String.fromCharCode(65 + index)}
+                        <div class="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center font-bold">
+                            ${String.fromCharCode(65 + optionIndex)}
                         </div>
                         <div class="flex-1">${option}</div>
                     </div>
                 `;
-                optionButton.onclick = () => selectOption(index, optionButton);
-                optionsContainer.appendChild(optionButton);
+                optionsContainer.appendChild(optionDiv);
             });
             
-            // Start timer
-            startTimer(question.timeLimit || 30);
-            
-            // Disable next button
-            document.getElementById('nextButton').disabled = true;
-        }
-
-        function selectOption(optionIndex, buttonElement) {
-            // Remove previous selection
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.classList.remove('border-blue-500', 'bg-blue-50');
-                btn.classList.add('border-gray-200');
-            });
-            
-            // Highlight selected option
-            buttonElement.classList.remove('border-gray-200');
-            buttonElement.classList.add('border-blue-500', 'bg-blue-50');
-            
-            // Store answer
-            const timeSpent = (appState.currentQuiz.questions[appState.currentQuestionIndex].timeLimit || 30) - appState.timeLeft;
-            appState.userAnswers[appState.currentQuestionIndex] = {
-                questionIndex: appState.currentQuestionIndex,
-                selectedOption: optionIndex,
-                timeSpent: timeSpent,
-                timestamp: Date.now()
-            };
-            
-            // Enable next button
-            document.getElementById('nextButton').disabled = false;
-            
-            // Submit answer to database
-            db.submitAnswer(
-                appState.currentGame.gameCode,
-                appState.currentStudent.nis,
-                appState.currentQuestionIndex,
-                optionIndex,
-                timeSpent
-            );
-        }
-
-        function startTimer(duration) {
-            appState.timeLeft = duration;
-            const timerElement = document.getElementById('timer');
-            
-            if (appState.timer) {
-                clearInterval(appState.timer);
+            // Setup timer
+            if (appState.gameMode === 'live') {
+                startTimer(question.timeLimit || 30);
+            } else {
+                document.getElementById('timerContainer').classList.add('hidden');
             }
             
-            appState.timer = setInterval(() => {
+            // Update navigation buttons
+            updateNavigationButtons();
+        }
+
+        function selectOption(optionIndex) {
+            // Clear previous selection
+            document.querySelectorAll('.quiz-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select new option
+            event.currentTarget.classList.add('selected');
+            
+            // Save answer
+            appState.answers[appState.currentQuestion] = optionIndex;
+            
+            // Auto advance for live mode
+            if (appState.gameMode === 'live') {
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1000);
+            } else {
+                updateNavigationButtons();
+            }
+        }
+
+        function startTimer(seconds) {
+            appState.timeLeft = seconds;
+            document.getElementById('timer').textContent = seconds;
+            
+            if (appState.timerInterval) {
+                clearInterval(appState.timerInterval);
+            }
+            
+            appState.timerInterval = setInterval(() => {
                 appState.timeLeft--;
-                timerElement.textContent = appState.timeLeft;
+                document.getElementById('timer').textContent = appState.timeLeft;
                 
                 // Warning when time is low
-                if (appState.timeLeft <= 10) {
-                    timerElement.parentElement.classList.add('timer-warning');
+                if (appState.timeLeft <= 5) {
+                    document.getElementById('timer').classList.add('timer-warning');
+                } else {
+                    document.getElementById('timer').classList.remove('timer-warning');
                 }
                 
+                // Time's up
                 if (appState.timeLeft <= 0) {
-                    clearInterval(appState.timer);
-                    // Auto-submit if no answer selected
-                    if (!appState.userAnswers[appState.currentQuestionIndex]) {
-                        appState.userAnswers[appState.currentQuestionIndex] = {
-                            questionIndex: appState.currentQuestionIndex,
-                            selectedOption: -1, // No answer
-                            timeSpent: duration,
-                            timestamp: Date.now()
-                        };
-                    }
+                    clearInterval(appState.timerInterval);
                     nextQuestion();
                 }
             }, 1000);
         }
 
-        function nextQuestion() {
-            if (appState.timer) {
-                clearInterval(appState.timer);
-            }
+        function updateNavigationButtons() {
+            const totalQuestions = appState.currentQuiz.questions.length;
+            const isLastQuestion = appState.currentQuestion === totalQuestions - 1;
+            const isFirstQuestion = appState.currentQuestion === 0;
             
-            // Remove timer warning
-            document.getElementById('timer').parentElement.classList.remove('timer-warning');
-            
-            appState.currentQuestionIndex++;
-            
-            if (appState.currentQuestionIndex >= appState.currentQuiz.questions.length) {
-                finishQuiz();
+            // Show/hide navigation buttons based on mode
+            if (appState.gameMode === 'live') {
+                // Live mode: no navigation buttons (auto advance)
+                document.getElementById('prevButton').classList.add('hidden');
+                document.getElementById('nextButton').classList.add('hidden');
+                document.getElementById('submitButton').classList.add('hidden');
             } else {
-                displayQuestion();
+                // Assignment/Exam mode: show navigation
+                document.getElementById('prevButton').classList.toggle('hidden', isFirstQuestion || appState.gameMode === 'exam');
+                document.getElementById('nextButton').classList.toggle('hidden', isLastQuestion);
+                document.getElementById('submitButton').classList.toggle('hidden', !isLastQuestion);
             }
         }
 
-        function finishQuiz() {
-            if (appState.timer) {
-                clearInterval(appState.timer);
+        function previousQuestion() {
+            if (appState.currentQuestion > 0 && appState.gameMode !== 'exam') {
+                showQuestion(appState.currentQuestion - 1);
+            }
+        }
+
+        function nextQuestion() {
+            if (appState.timerInterval) {
+                clearInterval(appState.timerInterval);
+            }
+            
+            const totalQuestions = appState.currentQuiz.questions.length;
+            
+            if (appState.currentQuestion < totalQuestions - 1) {
+                showQuestion(appState.currentQuestion + 1);
+            } else {
+                // Quiz completed
+                submitQuiz();
+            }
+        }
+
+        async function submitQuiz() {
+            if (appState.timerInterval) {
+                clearInterval(appState.timerInterval);
             }
             
             // Calculate score
             let correctAnswers = 0;
-            const totalQuestions = appState.currentQuiz.questions.length;
-            
-            appState.userAnswers.forEach((answer, index) => {
-                const question = appState.currentQuiz.questions[index];
-                if (answer && answer.selectedOption === question.correct) {
+            appState.currentQuiz.questions.forEach((question, index) => {
+                if (appState.answers[index] === question.correct) {
                     correctAnswers++;
                 }
             });
             
-            const score = Math.round((correctAnswers / totalQuestions) * 100);
+            appState.score = Math.round((correctAnswers / appState.currentQuiz.questions.length) * 100);
             
-            // Submit final score
-            db.submitFinalScore(
-                appState.currentGame.gameCode,
-                appState.currentStudent.nis,
-                score,
-                appState.userAnswers
-            );
-            
-            // Display results
-            document.getElementById('finalScore').textContent = score;
-            document.getElementById('correctAnswers').textContent = correctAnswers;
-            document.getElementById('totalQuestions').textContent = totalQuestions;
-            
-            // Set emoji based on score
-            let emoji = '🎉';
-            if (score >= 90) emoji = '🏆';
-            else if (score >= 80) emoji = '🎉';
-            else if (score >= 70) emoji = '👍';
-            else if (score >= 60) emoji = '😊';
-            else emoji = '💪';
-            
-            document.getElementById('resultEmoji').textContent = emoji;
-            
-            showResultsSection();
-        }
-
-        // Results functions
-        function viewDetailedResults() {
-            const modal = document.getElementById('detailedResultsModal');
-            const content = document.getElementById('detailedResultsContent');
-            content.innerHTML = '';
-            
-            appState.currentQuiz.questions.forEach((question, index) => {
-                const userAnswer = appState.userAnswers[index];
-                const isCorrect = userAnswer && userAnswer.selectedOption === question.correct;
-                
-                const questionDiv = document.createElement('div');
-                questionDiv.className = 'border rounded-xl p-6';
-                questionDiv.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <h4 class="font-semibold text-gray-900">Soal ${index + 1}</h4>
-                        <span class="px-3 py-1 rounded-full text-sm ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                            ${isCorrect ? '✅ Benar' : '❌ Salah'}
-                        </span>
-                    </div>
-                    
-                    <p class="text-gray-800 mb-4">${question.question}</p>
-                    
-                    <div class="space-y-2">
-                        ${question.options.map((option, optIndex) => {
-                            let className = 'p-3 rounded-lg border ';
-                            if (optIndex === question.correct) {
-                                className += 'bg-green-50 border-green-200 text-green-800';
-                            } else if (userAnswer && userAnswer.selectedOption === optIndex) {
-                                className += 'bg-red-50 border-red-200 text-red-800';
-                            } else {
-                                className += 'bg-gray-50 border-gray-200';
-                            }
-                            
-                            return `
-                                <div class="${className}">
-                                    <span class="font-medium">${String.fromCharCode(65 + optIndex)}.</span> ${option}
-                                    ${optIndex === question.correct ? ' <span class="text-green-600">✓</span>' : ''}
-                                    ${userAnswer && userAnswer.selectedOption === optIndex && optIndex !== question.correct ? ' <span class="text-red-600">✗</span>' : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                    
-                    <div class="mt-4 text-sm text-gray-600">
-                        Waktu: ${userAnswer ? userAnswer.timeSpent : 0} detik
-                    </div>
-                `;
-                content.appendChild(questionDiv);
-            });
-            
-            modal.classList.remove('hidden');
-        }
-
-        function hideDetailedResults() {
-            document.getElementById('detailedResultsModal').classList.add('hidden');
-        }
-
-        function backToHome() {
-            // Clean up
-            if (appState.gameListener) {
-                appState.gameListener();
-                appState.gameListener = null;
+            // Submit to database
+            try {
+                await db.submitFinalScore(
+                    appState.currentGame.gameCode,
+                    appState.currentStudent.nis,
+                    appState.score,
+                    appState.answers,
+                    new Date().toISOString()
+                );
+            } catch (error) {
+                console.error('Error submitting score:', error);
             }
             
-            if (appState.timer) {
-                clearInterval(appState.timer);
-                appState.timer = null;
+            // Show results
+            if (appState.gameMode === 'live') {
+                showLeaderboard();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('questionScreen').classList.add('hidden');
+            document.getElementById('resultsScreen').classList.remove('hidden');
+            
+            const correctAnswers = appState.answers.filter((answer, index) => 
+                answer === appState.currentQuiz.questions[index].correct
+            ).length;
+            
+            const wrongAnswers = appState.currentQuiz.questions.length - correctAnswers;
+            
+            // Update result display
+            document.getElementById('finalScore').textContent = appState.score;
+            document.getElementById('correctAnswers').textContent = correctAnswers;
+            document.getElementById('wrongAnswers').textContent = wrongAnswers;
+            
+            // Set emoji and title based on score
+            if (appState.score >= 90) {
+                document.getElementById('resultEmoji').textContent = '🏆';
+                document.getElementById('resultTitle').textContent = 'Luar Biasa!';
+                document.getElementById('resultSubtitle').textContent = 'Nilai sempurna! Pertahankan prestasi ini.';
+            } else if (appState.score >= 80) {
+                document.getElementById('resultEmoji').textContent = '🎉';
+                document.getElementById('resultTitle').textContent = 'Bagus Sekali!';
+                document.getElementById('resultSubtitle').textContent = 'Hasil yang memuaskan. Terus tingkatkan!';
+            } else if (appState.score >= 60) {
+                document.getElementById('resultEmoji').textContent = '👍';
+                document.getElementById('resultTitle').textContent = 'Cukup Baik!';
+                document.getElementById('resultSubtitle').textContent = 'Masih bisa ditingkatkan lagi.';
+            } else {
+                document.getElementById('resultEmoji').textContent = '💪';
+                document.getElementById('resultTitle').textContent = 'Tetap Semangat!';
+                document.getElementById('resultSubtitle').textContent = 'Belajar lagi dan coba lagi ya!';
+            }
+        }
+
+        function showLeaderboard() {
+            document.getElementById('questionScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            
+            // Simulate leaderboard data (in real app, this would be real-time)
+            const leaderboardData = [
+                { name: appState.currentStudent.name, score: appState.score, nis: appState.currentStudent.nis },
+                { name: 'Ahmad Fauzi', score: 95, nis: '2024001' },
+                { name: 'Siti Nurhaliza', score: 88, nis: '2024002' },
+                { name: 'Budi Santoso', score: 82, nis: '2024003' }
+            ].sort((a, b) => b.score - a.score);
+            
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = '';
+            
+            leaderboardData.forEach((player, index) => {
+                const isCurrentStudent = player.nis === appState.currentStudent.nis;
+                const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `leaderboard-item flex items-center justify-between p-4 rounded-xl ${isCurrentStudent ? 'bg-blue-600' : 'bg-gray-800'}`;
+                playerDiv.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl">${rankEmoji}</div>
+                        <div>
+                            <div class="font-semibold">${player.name} ${isCurrentStudent ? '(Anda)' : ''}</div>
+                            <div class="text-sm opacity-75">Peringkat ${index + 1}</div>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-bold">${player.score}</div>
+                `;
+                leaderboardList.appendChild(playerDiv);
+            });
+        }
+
+        function exitGame() {
+            if (appState.gameMode === 'exam' && document.getElementById('questionScreen').classList.contains('hidden') === false) {
+                showExamWarning();
+                return;
+            }
+            
+            if (appState.timerInterval) {
+                clearInterval(appState.timerInterval);
             }
             
             // Reset game state
             appState.currentGame = null;
             appState.currentQuiz = null;
-            appState.currentQuestionIndex = 0;
-            appState.userAnswers = [];
+            appState.currentQuestion = 0;
+            appState.answers = [];
+            appState.score = 0;
+            appState.examWarnings = 0;
             
-            // Clear form
-            document.getElementById('gameCodeInput').value = '';
+            // Return to dashboard
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
             
-            showJoinGameSection();
+            // Refresh dashboard data
+            loadDashboardData();
         }
 
-        // Utility functions
-        function loadRecentGames() {
-            const container = document.getElementById('recentGamesContainer');
-            container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">Belum ada riwayat quiz</div>';
+        // Exam Mode Functions
+        function setupExamMode() {
+            appState.examStartTime = Date.now();
+            
+            // Request fullscreen
+            if (appState.currentQuiz.settings?.fullscreen) {
+                requestFullscreen();
+            }
+            
+            // Setup tab/window change detection
+            if (appState.currentQuiz.settings?.blockTabs) {
+                setupTabChangeDetection();
+            }
+            
+            // Setup exam timer
+            if (appState.currentQuiz.settings?.duration) {
+                setupExamTimer(appState.currentQuiz.settings.duration * 60); // Convert to seconds
+            }
+        }
+
+        function requestFullscreen() {
+            const element = document.documentElement;
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
+            
+            appState.isFullscreen = true;
+        }
+
+        function setupTabChangeDetection() {
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('blur', handleWindowBlur);
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden && appState.gameMode === 'exam') {
+                recordExamViolation('Tab/Window changed');
+            }
+        }
+
+        function handleWindowBlur() {
+            if (appState.gameMode === 'exam') {
+                recordExamViolation('Window lost focus');
+            }
+        }
+
+        function handleBeforeUnload(e) {
+            if (appState.gameMode === 'exam') {
+                e.preventDefault();
+                e.returnValue = 'Ujian sedang berlangsung. Yakin ingin keluar?';
+                return e.returnValue;
+            }
+        }
+
+        function recordExamViolation(type) {
+            appState.examWarnings++;
+            
+            // Show warning
+            showExamViolationWarning(type);
+            
+            // Auto-submit if too many violations
+            const warningLimit = appState.currentQuiz.settings?.warningLimit || 3;
+            if (appState.examWarnings >= warningLimit) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Ujian Berakhir!',
+                    text: `Terlalu banyak pelanggaran (${appState.examWarnings}). Ujian akan berakhir otomatis.`,
+                    confirmButtonColor: '#ef4444',
+                    allowOutsideClick: false
+                }).then(() => {
+                    submitQuiz();
+                });
+            }
+        }
+
+        function showExamViolationWarning(type) {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'exam-warning';
+            warningDiv.innerHTML = `
+                <div class="font-semibold">⚠️ Pelanggaran Ujian!</div>
+                <div class="text-sm">${type} - Peringatan ${appState.examWarnings}</div>
+            `;
+            
+            document.body.appendChild(warningDiv);
+            
+            setTimeout(() => {
+                warningDiv.remove();
+            }, 5000);
+        }
+
+        function setupExamTimer(totalSeconds) {
+            let timeLeft = totalSeconds;
+            
+            const timerDisplay = document.getElementById('timer');
+            timerDisplay.textContent = formatTime(timeLeft);
+            
+            const examTimer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+                
+                // Warning when 5 minutes left
+                if (timeLeft <= 300) {
+                    timerDisplay.classList.add('timer-warning');
+                }
+                
+                // Auto submit when time's up
+                if (timeLeft <= 0) {
+                    clearInterval(examTimer);
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Waktu Habis!',
+                        text: 'Waktu ujian telah berakhir. Jawaban akan dikumpulkan otomatis.',
+                        confirmButtonColor: '#3b82f6',
+                        allowOutsideClick: false
+                    }).then(() => {
+                        submitQuiz();
+                    });
+                }
+            }, 1000);
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function showExamWarning() {
+            document.getElementById('examWarningOverlay').classList.remove('hidden');
+        }
+
+        function returnToExam() {
+            document.getElementById('examWarningOverlay').classList.add('hidden');
+        }
+
+        function forceExitExam() {
+            recordExamViolation('Force exit');
+            submitQuiz();
+            document.getElementById('examWarningOverlay').classList.add('hidden');
+        }
+
+        // Assignment and Exam Loading
+        async function loadAssignments() {
+            if (!appState.currentStudent) return;
+            
+            const assignments = await db.getAssignments(appState.currentStudent.class);
+            appState.assignments = assignments;
+            
+            const container = document.getElementById('assignmentsList');
+            container.innerHTML = '';
+            
+            if (assignments.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">Tidak ada tugas tersedia</div>';
+                return;
+            }
+            
+            assignments.forEach(assignment => {
+                const deadline = new Date(assignment.settings?.deadline);
+                const isExpired = deadline < new Date();
+                
+                const assignmentCard = document.createElement('div');
+                assignmentCard.className = 'bg-white rounded-xl shadow-sm overflow-hidden card-hover';
+                assignmentCard.innerHTML = `
+                    <div class="mode-assignment p-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-2xl">📝</span>
+                                <span class="font-semibold">Tugas/PR</span>
+                            </div>
+                            <span class="text-sm opacity-75">${assignment.quiz?.questions?.length || 0} soal</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${assignment.quiz?.title || 'Tugas'}</h3>
+                        <div class="space-y-1 text-sm text-gray-600 mb-4">
+                            <div>📚 ${assignment.subject}</div>
+                            <div>🎯 ${assignment.material}</div>
+                            <div>⏰ Deadline: ${deadline.toLocaleDateString('id-ID')} ${deadline.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</div>
+                            <div>⏱️ Durasi: ${assignment.settings?.duration || 60} menit</div>
+                        </div>
+                        
+                        ${isExpired ? 
+                            '<div class="bg-red-100 text-red-800 px-3 py-2 rounded-lg text-sm">Sudah melewati deadline</div>' :
+                            `<button onclick="startAssignment('${assignment.gameCode}')" class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors">
+                                🚀 Mulai Mengerjakan
+                            </button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(assignmentCard);
+            });
+        }
+
+        async function loadExams() {
+            if (!appState.currentStudent) return;
+            
+            const exams = await db.getExams(appState.currentStudent.class);
+            appState.exams = exams;
+            
+            const container = document.getElementById('examsList');
+            container.innerHTML = '';
+            
+            if (exams.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">Tidak ada ujian tersedia</div>';
+                return;
+            }
+            
+            exams.forEach(exam => {
+                const examCard = document.createElement('div');
+                examCard.className = 'bg-white rounded-xl shadow-sm overflow-hidden card-hover';
+                examCard.innerHTML = `
+                    <div class="mode-exam p-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-2xl">🎯</span>
+                                <span class="font-semibold">Ujian</span>
+                            </div>
+                            <span class="text-sm opacity-75">${exam.quiz?.questions?.length || 0} soal</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${exam.quiz?.title || 'Ujian'}</h3>
+                        <div class="space-y-1 text-sm text-gray-600 mb-4">
+                            <div>📚 ${exam.subject}</div>
+                            <div>🎯 ${exam.material}</div>
+                            <div>⏱️ Durasi: ${exam.settings?.duration || 90} menit</div>
+                            <div>🔒 Mode Ketat: ${exam.settings?.blockTabs ? 'Ya' : 'Tidak'}</div>
+                            <div>📺 Fullscreen: ${exam.settings?.fullscreen ? 'Wajib' : 'Tidak'}</div>
+                        </div>
+                        
+                        <button onclick="startExam('${exam.gameCode}')" class="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                            🎯 Mulai Ujian
+                        </button>
+                    </div>
+                `;
+                container.appendChild(examCard);
+            });
+        }
+
+        async function startAssignment(gameCode) {
+            const assignment = appState.assignments.find(a => a.gameCode === gameCode);
+            if (!assignment) return;
+            
+            const result = await Swal.fire({
+                title: 'Mulai Tugas/PR?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-2"><strong>Judul:</strong> ${assignment.quiz?.title}</p>
+                        <p class="mb-2"><strong>Durasi:</strong> ${assignment.settings?.duration || 60} menit</p>
+                        <p class="mb-2"><strong>Jumlah Soal:</strong> ${assignment.quiz?.questions?.length || 0}</p>
+                        <p class="mb-4"><strong>Deadline:</strong> ${new Date(assignment.settings?.deadline).toLocaleString('id-ID')}</p>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p class="text-sm text-yellow-800">⚠️ Setelah dimulai, waktu akan terus berjalan sampai selesai atau habis.</p>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Mulai',
+                cancelButtonText: 'Batal'
+            });
+            
+            if (result.isConfirmed) {
+                appState.currentGame = assignment;
+                appState.currentQuiz = assignment.quiz;
+                appState.gameMode = 'assignment';
+                startGame();
+            }
+        }
+
+        async function startExam(gameCode) {
+            const exam = appState.exams.find(e => e.gameCode === gameCode);
+            if (!exam) return;
+            
+            const result = await Swal.fire({
+                title: 'Mulai Ujian?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-2"><strong>Judul:</strong> ${exam.quiz?.title}</p>
+                        <p class="mb-2"><strong>Durasi:</strong> ${exam.settings?.duration || 90} menit</p>
+                        <p class="mb-2"><strong>Jumlah Soal:</strong> ${exam.quiz?.questions?.length || 0}</p>
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                            <p class="text-sm text-red-800 font-semibold mb-2">⚠️ PERHATIAN UJIAN:</p>
+                            <ul class="text-xs text-red-700 space-y-1">
+                                ${exam.settings?.fullscreen ? '<li>• Akan masuk mode fullscreen</li>' : ''}
+                                ${exam.settings?.blockTabs ? '<li>• Tidak boleh berpindah tab/aplikasi</li>' : ''}
+                                <li>• Pelanggaran akan dicatat sistem</li>
+                                <li>• Ujian berakhir otomatis jika terlalu banyak pelanggaran</li>
+                                <li>• Tidak bisa kembali ke soal sebelumnya</li>
+                            </ul>
+                        </div>
+                        <p class="text-sm text-gray-600">Pastikan koneksi internet stabil dan tidak ada gangguan.</p>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Mulai Ujian',
+                cancelButtonText: 'Batal'
+            });
+            
+            if (result.isConfirmed) {
+                appState.currentGame = exam;
+                appState.currentQuiz = exam.quiz;
+                appState.gameMode = 'exam';
+                startGame();
+            }
+        }
+
+        async function loadHistory() {
+            if (!appState.currentStudent) return;
+            
+            const history = await db.getStudentHistory(appState.currentStudent.nis);
+            appState.history = history;
+            
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Belum ada riwayat quiz</td></tr>';
+                return;
+            }
+            
+            history.forEach(item => {
+                const modeText = item.mode === 'live' ? 'Live' : item.mode === 'assignment' ? 'Tugas' : 'Ujian';
+                const modeClass = item.mode === 'live' ? 'bg-green-100 text-green-800' : item.mode === 'assignment' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800';
+                const scoreClass = item.score >= 80 ? 'text-green-600' : item.score >= 60 ? 'text-yellow-600' : 'text-red-600';
+                const statusClass = item.score >= 60 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const statusText = item.score >= 60 ? 'Lulus' : 'Tidak Lulus';
+                
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(item.completedAt).toLocaleDateString('id-ID')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Quiz ${item.gameCode}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${modeClass}">${modeText}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${scoreClass}">${item.score}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${statusClass}">${statusText}</span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
         }
 
         // Auto-uppercase game code input
         document.addEventListener('DOMContentLoaded', function() {
-            const gameCodeInput = document.getElementById('gameCodeInput');
-            if (gameCodeInput) {
-                gameCodeInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
-                });
-                
-                gameCodeInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        joinGame();
-                    }
-                });
-            }
-            
-            // Initialize database
+            const gameCodeInputs = ['gameCodeInput', 'dashboardGameCode'];
+            gameCodeInputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        this.value = this.value.toUpperCase();
+                    });
+                }
+            });
+        });
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
             db.init();
         });
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972f600464e140ce',t:'MTc1NTgzNDMwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
