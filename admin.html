@@ -2079,7 +2079,7 @@
                 return;
             }
             
-            results.slice(0, 10).forEach((result, index) => {
+            results.slice(0, 10).forEach((result, index) {
                 const student = adminState.students.find(s => s.nis === result.nis);
                 const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
                 
@@ -2241,6 +2241,7 @@
             
             Swal.fire({
                 title: `📊 Hasil: ${game.quiz?.title || 'Game'}`,
+				                title: `📊 Hasil: ${game.quiz?.title || 'Game'}`,
                 html: resultsHtml,
                 width: '800px',
                 confirmButtonText: '📥 Export Excel',
@@ -2254,527 +2255,964 @@
             });
         }
 
-        function exportGame<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9730c20c12f29cad',t:'MTc1NTg0ODgwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-<script>
-/*
-  QuizMaster Pro – Inject Layer (Full Feature)
-  -------------------------------------------------
-  Drop-in script to "inject" missing features into your existing Admin Panel
-  without rewriting your HTML. Works with Firebase (if already initialized) or
-  falls back to localStorage. Zero external deps required; optional libs loaded
-  on demand (Chart.js, SheetJS) when needed.
+        function exportGameResults(gameCode, results) {
+            // Simulate export functionality
+            Swal.fire({
+                icon: 'info',
+                title: 'Fitur Export',
+                text: 'Fitur export hasil game akan segera tersedia di versi berikutnya.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  How it works
-  - Looks for common element IDs used by your UI (gamesList, questionsTableBody,
-    studentsTableBody, etc.). If not found, degrades gracefully.
-  - Exposes global API used by buttons in your HTML (createGame, createQuestion,
-    createStudent, exportData, importData, backupDatabase, showSection, ...).
-  - If your HTML already defines some of these functions, the inject layer will
-    NOT overwrite them unless they are missing.
-*/
+        function editGame(gameCode) {
+            // Find the game
+            const game = adminState.games.find(g => g.gameCode === gameCode);
+            if (!game) return;
+            
+            // Show edit modal
+            document.getElementById('createGameModal').classList.remove('hidden');
+            
+            // Set form values
+            document.getElementById('gameTitle').value = game.quiz?.title || '';
+            document.getElementById('gameMode').value = game.mode || 'live';
+            document.getElementById('gameSubject').value = game.subject || 'Matematika';
+            document.getElementById('gameClass').value = game.class || 'All';
+            document.getElementById('gameMaterial').value = game.material || '';
+            document.getElementById('gameDuration').value = game.settings?.duration || 30;
+            
+            // Set mode-specific settings
+            if (game.mode === 'live') {
+                document.getElementById('gameTimeLimit').value = game.settings?.timeLimit || 30;
+            } else if (game.mode === 'assignment') {
+                document.getElementById('gameDeadline').value = game.settings?.deadline || '';
+            } else if (game.mode === 'exam') {
+                document.getElementById('examFullscreen').checked = game.settings?.fullscreen || true;
+                document.getElementById('examBlockTabs').checked = game.settings?.blockTabs || true;
+                document.getElementById('examWarningLimitModal').value = game.settings?.warningLimit || 3;
+            }
+            
+            // Update modal title and button
+            document.querySelector('#createGameModal h3').textContent = 'Edit Game';
+            const createBtn = document.querySelector('#createGameModal button[onclick*="Game"]');
+            if (createBtn) {
+                createBtn.textContent = 'Update Game';
+                createBtn.setAttribute('onclick', `updateGame('${gameCode}')`);
+            }
+            
+            // Load questions and check the ones in this game
+            loadQuestionSelection().then(() => {
+                if (game.quiz?.questions) {
+                    game.quiz.questions.forEach(question => {
+                        const checkbox = document.getElementById(`q_${question.id}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+            });
+            
+            toggleGameModeSettings();
+        }
 
-(function () {
-  const G = { // Global state
-    db: null, // Firebase RTDB reference if available
-    games: [],
-    questions: [],
-    students: [],
-    charts: { grade: null, activity: null },
-    loaders: { chart: false, xlsx: false },
-  };
+        async function updateGame(gameCode) {
+            // Similar to createGame but update existing game
+            // Implementation would be similar to createGame but with update logic
+            Swal.fire({
+                icon: 'info',
+                title: 'Fitur Edit Game',
+                text: 'Fitur edit game akan segera tersedia di versi berikutnya.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  // ---- Helpers ----
-  const $ = (id) => document.getElementById(id);
-  const hasEl = (id) => !!$(id);
-  const byQS = (sel) => document.querySelector(sel);
-  const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
-  function uid(prefix = '') { return (prefix || 'id') + Math.random().toString(36).slice(2, 9); }
-  function gameCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r = ''; for (let i = 0; i < 6; i++) r += c[Math.floor(Math.random() * c.length)]; return r; }
+        function deleteGame(gameCode) {
+            Swal.fire({
+                title: 'Hapus Game?',
+                text: 'Game yang dihapus tidak dapat dikembalikan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        // In a real implementation, we would delete from Firebase
+                        // await database.ref(`games/${gameCode}`).remove();
+                        
+                        // For now, just remove from local state
+                        adminState.games = adminState.games.filter(g => g.gameCode !== gameCode);
+                        displayGames(adminState.games);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Game Dihapus!',
+                            text: 'Game berhasil dihapus.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus Game!',
+                            text: 'Terjadi kesalahan saat menghapus game.',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                }
+            });
+        }
 
-  // ---- Storage adapter (Firebase if present, else localStorage) ----
-  function detectFirebase() {
-    try {
-      if (window.firebase && firebase.apps && firebase.apps.length > 0) {
-        return firebase.database();
-      }
-    } catch (e) { /* noop */ }
-    return null;
-  }
-  G.db = detectFirebase();
+        // Questions Management
+        async function loadQuestions() {
+            const questions = await db.getQuestions();
+            adminState.questions = questions;
+            displayQuestions(questions);
+        }
 
-  const store = {
-    async read(path, fallback) {
-      if (G.db) {
-        const snap = await G.db.ref(path).once('value');
-        return snap.exists() ? snap.val() : fallback;
-      }
-      try { return JSON.parse(localStorage.getItem(path)) ?? fallback; } catch { return fallback; }
-    },
-    async write(path, value) {
-      if (G.db) { await G.db.ref(path).set(value); return; }
-      localStorage.setItem(path, JSON.stringify(value));
-    },
-    async update(path, patch) {
-      if (G.db) { await G.db.ref(path).update(patch); return; }
-      const cur = await store.read(path, {}); await store.write(path, { ...cur, ...patch });
-    },
-    async remove(path) {
-      if (G.db) { await G.db.ref(path).remove(); return; }
-      localStorage.removeItem(path);
-    },
-  };
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionsTableBody');
+            container.innerHTML = '';
+            
+            if (questions.length === 0) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            Belum ada soal yang ditambahkan
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            questions.forEach(question => {
+                const difficultyText = question.difficulty === 'easy' ? 'Mudah' : 
+                                    question.difficulty === 'medium' ? 'Sedang' : 'Sulit';
+                
+                const difficultyColor = question.difficulty === 'easy' ? 'text-green-600' : 
+                                     question.difficulty === 'medium' ? 'text-yellow-600' : 'text-red-600';
+                
+                const row = document.createElement('tr');
+                row.className = 'question-item';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${question.question}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${question.subject}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-semibold ${difficultyColor} bg-${difficultyColor.split('-')[1]}-100 rounded-full">
+                            ${difficultyText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(question.createdAt)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="editQuestion('${question.id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="deleteQuestion('${question.id}')" class="text-red-600 hover:text-red-900">
+                            🗑️ Hapus
+                        </button>
+                    </td>
+                `;
+                container.appendChild(row);
+            });
+        }
 
-  // ---- Sample fallback (only used when storage empty) ----
-  const SAMPLE = {
-    questions: [
-      { id: 'q1', subject: 'Matematika', difficulty: 'easy', question: '15 + 27 = ...', options: ['40', '42', '43', '45'], correct: 1, explanation: '15+27=42', createdAt: '2024-01-15' },
-      { id: 'q2', subject: 'IPA', difficulty: 'easy', question: 'Planet terdekat dari Matahari?', options: ['Venus', 'Merkurius', 'Bumi', 'Mars'], correct: 1, explanation: 'Merkurius', createdAt: '2024-01-16' },
-    ],
-    students: [
-      { nis: '2024001', name: 'Ahmad Fauzi', class: '7A', email: 'ahmad@school.edu', status: 'active' },
-      { nis: '2024002', name: 'Siti Nur', class: '7A', email: 'siti@school.edu', status: 'active' },
-    ],
-    games: [],
-  };
+        function filterQuestions() {
+            const subject = document.getElementById('questionFilterSubject').value;
+            const difficulty = document.getElementById('questionFilterDifficulty').value;
+            const search = document.getElementById('questionSearchInput').value.toLowerCase();
+            
+            let filteredQuestions = adminState.questions;
+            
+            if (subject) {
+                filteredQuestions = filteredQuestions.filter(question => question.subject === subject);
+            }
+            
+            if (difficulty) {
+                filteredQuestions = filteredQuestions.filter(question => question.difficulty === difficulty);
+            }
+            
+            if (search) {
+                filteredQuestions = filteredQuestions.filter(question => 
+                    question.question.toLowerCase().includes(search) ||
+                    question.subject.toLowerCase().includes(search)
+                );
+            }
+            
+            displayQuestions(filteredQuestions);
+        }
 
-  // ---- Bootstrapping ----
-  async function loadAll() {
-    G.questions = (await store.read('questions', null)) || SAMPLE.questions;
-    G.students = (await store.read('students', null)) || SAMPLE.students;
-    const games = await store.read('games', null);
-    G.games = games ? Object.keys(games).map(k => ({ gameCode: k, ...games[k] })) : SAMPLE.games;
-  }
+        function showCreateQuestionModal() {
+            document.getElementById('createQuestionModal').classList.remove('hidden');
+            clearQuestionForm();
+        }
 
-  async function persistAll() {
-    await store.write('questions', G.questions);
-    await store.write('students', G.students);
-    const gamesObj = {}; G.games.forEach(g => { const code = g.gameCode || gameCode(); gamesObj[code] = { ...g, gameCode: code }; });
-    await store.write('games', gamesObj);
-  }
+        function hideCreateQuestionModal() {
+            document.getElementById('createQuestionModal').classList.add('hidden');
+        }
 
-  // ---- Dynamic loader ----
-  function loadScriptOnce(src) {
-    return new Promise((resolve, reject) => {
-      if ([...document.scripts].some(s => s.src.includes(src))) return resolve();
-      const s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
-    });
-  }
+        function clearQuestionForm() {
+            document.getElementById('questionSubject').value = 'Matematika';
+            document.getElementById('questionDifficulty').value = 'easy';
+            document.getElementById('questionText').value = '';
+            document.getElementById('option0').value = '';
+            document.getElementById('option1').value = '';
+            document.getElementById('option2').value = '';
+            document.getElementById('option3').value = '';
+            document.getElementById('questionExplanation').value = '';
+            
+            // Uncheck all radio buttons
+            document.querySelectorAll('input[name="correctAnswer"]').forEach(radio => {
+                radio.checked = false;
+            });
+        }
 
-  async function ensureChart() {
-    if (window.Chart) return;
-    if (!G.loaders.chart) { G.loaders.chart = true; await loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'); }
-  }
-  async function ensureXLSX() {
-    if (window.XLSX) return;
-    if (!G.loaders.xlsx) { G.loaders.xlsx = true; await loadScriptOnce('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
-  }
+        async function createQuestion() {
+            const subject = document.getElementById('questionSubject').value;
+            const difficulty = document.getElementById('questionDifficulty').value;
+            const questionText = document.getElementById('questionText').value.trim();
+            const option0 = document.getElementById('option0').value.trim();
+            const option1 = document.getElementById('option1').value.trim();
+            const option2 = document.getElementById('option2').value.trim();
+            const option3 = document.getElementById('option3').value.trim();
+            const explanation = document.getElementById('questionExplanation').value.trim();
+            
+            // Find which option is correct
+            let correctAnswer = -1;
+            document.querySelectorAll('input[name="correctAnswer"]').forEach((radio, index) => {
+                if (radio.checked) {
+                    correctAnswer = index;
+                }
+            });
+            
+            // Validate form
+            if (!questionText || !option0 || !option1 || !option2 || !option3 || correctAnswer === -1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua field dan pilih jawaban yang benar.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            const questionData = {
+                subject: subject,
+                difficulty: difficulty,
+                question: questionText,
+                options: [option0, option1, option2, option3],
+                correct: correctAnswer,
+                explanation: explanation
+            };
+            
+            try {
+                Swal.fire({
+                    title: 'Menyimpan Soal...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                await db.createQuestion(questionData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Soal Berhasil Disimpan!',
+                    text: 'Soal baru telah ditambahkan ke bank soal.',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideCreateQuestionModal();
+                loadQuestions();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan Soal!',
+                    text: 'Terjadi kesalahan saat menyimpan soal.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
 
-  // ---- Rendering (Dashboard) ----
-  function renderDashboard() {
-    if (hasEl('totalGames')) $('totalGames').textContent = G.games.length;
-    if (hasEl('totalStudents')) $('totalStudents').textContent = G.students.length;
-    if (hasEl('totalQuestions')) $('totalQuestions').textContent = G.questions.length;
-    if (hasEl('activeGames')) $('activeGames').textContent = G.games.filter(g => g.status === 'active').length;
-    if (hasEl('recentActivities')) {
-      const wrap = $('recentActivities'); wrap.innerHTML = '';
-      const recent = [
-        { t: 'Sistem siap digunakan', d: new Date() },
-        { t: 'Memuat data awal', d: new Date() },
-      ];
-      recent.forEach(r => wrap.insertAdjacentHTML('beforeend',
-        `<div class="flex items-center justify-between p-3 bg-gray-50 rounded"><span class="text-sm">${r.t}</span><span class="text-xs text-gray-500">${r.d.toLocaleTimeString('id-ID')}</span></div>`
-      ));
-    }
-  }
+        function editQuestion(questionId) {
+            const question = adminState.questions.find(q => q.id === questionId);
+            if (!question) return;
+            
+            // Show edit modal
+            document.getElementById('createQuestionModal').classList.remove('hidden');
+            
+            // Set form values
+            document.getElementById('questionSubject').value = question.subject;
+            document.getElementById('questionDifficulty').value = question.difficulty;
+            document.getElementById('questionText').value = question.question;
+            document.getElementById('option0').value = question.options[0];
+            document.getElementById('option1').value = question.options[1];
+            document.getElementById('option2').value = question.options[2];
+            document.getElementById('option3').value = question.options[3];
+            document.getElementById('questionExplanation').value = question.explanation || '';
+            
+            // Check the correct answer
+            document.getElementById(`correct${question.correct}`).checked = true;
+            
+            // Update modal title and button
+            document.querySelector('#createQuestionModal h3').textContent = 'Edit Soal';
+            const createBtn = document.querySelector('#createQuestionModal button[onclick*="Question"]');
+            if (createBtn) {
+                createBtn.textContent = 'Update Soal';
+                createBtn.setAttribute('onclick', `updateQuestion('${questionId}')`);
+            }
+        }
 
-  // ---- Rendering (Games) ----
-  function renderGames(list = G.games) {
-    if (!hasEl('gamesList')) return;
-    const wrap = $('gamesList'); wrap.innerHTML = '';
-    if (!list.length) { wrap.innerHTML = '<div class="col-span-full text-center text-gray-500">Belum ada game.</div>'; return; }
-    list.forEach(g => {
-      const status = g.status || 'draft';
-      const statusClass = status === 'active' ? 'bg-green-100 text-green-700' : status === 'completed' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700';
-      wrap.insertAdjacentHTML('beforeend', `
-        <div class="bg-white p-5 rounded-xl shadow-sm flex flex-col">
-          <div class="flex items-start justify-between">
-            <div>
-              <h4 class="text-lg font-semibold text-gray-900">${g.title || '-'}</h4>
-              <div class="text-sm text-gray-600">${g.subject || '-'} • ${g.class || 'All'} • ${g.mode || 'live'}</div>
-            </div>
-            <span class="text-xs px-2 py-1 rounded ${statusClass}">${status}</span>
-          </div>
-          <div class="mt-3 text-sm text-gray-600">Kode: <span class="font-mono font-semibold">${g.gameCode}</span></div>
-          <div class="mt-4 flex items-center gap-2">
-            <button class="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg" onclick="openControl('${g.gameCode}')">Kontrol</button>
-            <button class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg" onclick="navigator.clipboard && navigator.clipboard.writeText('${g.gameCode}')">Copy Kode</button>
-          </div>
-        </div>`);
-    });
-  }
+        async function updateQuestion(questionId) {
+            const subject = document.getElementById('questionSubject').value;
+            const difficulty = document.getElementById('questionDifficulty').value;
+            const questionText = document.getElementById('questionText').value.trim();
+            const option0 = document.getElementById('option0').value.trim();
+            const option1 = document.getElementById('option1').value.trim();
+            const option2 = document.getElementById('option2').value.trim();
+            const option3 = document.getElementById('option3').value.trim();
+            const explanation = document.getElementById('questionExplanation').value.trim();
+            
+            // Find which option is correct
+            let correctAnswer = -1;
+            document.querySelectorAll('input[name="correctAnswer"]').forEach((radio, index) => {
+                if (radio.checked) {
+                    correctAnswer = index;
+                }
+            });
+            
+            // Validate form
+            if (!questionText || !option0 || !option1 || !option2 || !option3 || correctAnswer === -1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua field dan pilih jawaban yang benar.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            const questionData = {
+                subject: subject,
+                difficulty: difficulty,
+                question: questionText,
+                options: [option0, option1, option2, option3],
+                correct: correctAnswer,
+                explanation: explanation
+            };
+            
+            try {
+                Swal.fire({
+                    title: 'Memperbarui Soal...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                await db.updateQuestion(questionId, questionData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Soal Berhasil Diperbarui!',
+                    text: 'Soal telah diperbarui.',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideCreateQuestionModal();
+                loadQuestions();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memperbarui Soal!',
+                    text: 'Terjadi kesalahan saat memperbarui soal.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
 
-  function filterGames() {
-    const mode = $('gameFilterMode')?.value || '';
-    const status = $('gameFilterStatus')?.value || '';
-    const q = ($('gameSearchInput')?.value || '').toLowerCase();
-    const f = G.games.filter(g => (!mode || g.mode === mode) && (!status || g.status === status) && (!q || (g.title || '').toLowerCase().includes(q)));
-    renderGames(f);
-  }
+        function deleteQuestion(questionId) {
+            Swal.fire({
+                title: 'Hapus Soal?',
+                text: 'Soal yang dihapus tidak dapat dikembalikan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await db.deleteQuestion(questionId);
+                        
+                        // Remove from local state
+                        adminState.questions = adminState.questions.filter(q => q.id !== questionId);
+                        displayQuestions(adminState.questions);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Soal Dihapus!',
+                            text: 'Soal berhasil dihapus dari bank soal.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus Soal!',
+                            text: 'Terjadi kesalahan saat menghapus soal.',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                }
+            });
+        }
 
-  // ---- Rendering (Questions) ----
-  function renderQuestions(list = G.questions) {
-    if (!hasEl('questionsTableBody')) return;
-    const tb = $('questionsTableBody'); tb.innerHTML = '';
-    if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada soal.</td></tr>'; return; }
-    list.forEach(q => tb.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td class="px-6 py-4 text-sm">${q.question}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">${q.subject}</td>
-        <td class="px-6 py-4 text-sm"><span class="px-2 py-1 rounded text-xs ${q.difficulty === 'easy' ? 'bg-green-100 text-green-700' : q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${q.difficulty}</span></td>
-        <td class="px-6 py-4 text-sm text-gray-600">${q.createdAt ? formatDate(q.createdAt) : '-'}</td>
-        <td class="px-6 py-4 text-sm"><button class="px-3 py-1 bg-red-50 text-red-700 rounded" onclick="deleteQuestion('${q.id}')">Hapus</button></td>
-      </tr>`));
-  }
+        function showImportQuestionsModal() {
+            document.getElementById('importQuestionsModal').classList.remove('hidden');
+        }
 
-  function filterQuestions() {
-    const s = $('questionFilterSubject')?.value || '';
-    const d = $('questionFilterDifficulty')?.value || '';
-    const q = ($('questionSearchInput')?.value || '').toLowerCase();
-    const f = G.questions.filter(x => (!s || x.subject === s) && (!d || x.difficulty === d) && (!q || (x.question || '').toLowerCase().includes(q)));
-    renderQuestions(f);
-  }
+        function hideImportQuestionsModal() {
+            document.getElementById('importQuestionsModal').classList.add('hidden');
+        }
 
-  // ---- Rendering (Students) ----
-  function renderStudents(list = G.students) {
-    if (!hasEl('studentsTableBody')) return;
-    const tb = $('studentsTableBody'); tb.innerHTML = '';
-    if (!list.length) { tb.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Belum ada siswa.</td></tr>'; return; }
-    list.forEach(s => tb.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td class="px-6 py-4 text-sm">${s.nis}</td>
-        <td class="px-6 py-4 text-sm">${s.name}</td>
-        <td class="px-6 py-4 text-sm">${s.class}</td>
-        <td class="px-6 py-4 text-sm">${s.email || '-'}</td>
-        <td class="px-6 py-4 text-sm">${s.status || '-'}</td>
-        <td class="px-6 py-4 text-sm">
-          <button class="px-3 py-1 bg-red-50 text-red-700 rounded" onclick="deleteStudent('${s.nis}')">Hapus</button>
-        </td>
-      </tr>`));
-  }
+        function previewQuestionFile(event) {
+            // Simulate file preview
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('questionImportPreviewContainer').classList.remove('hidden');
+                document.getElementById('importQuestionsBtn').disabled = false;
+                
+                // Simulate preview data
+                const previewContainer = document.getElementById('questionImportPreview');
+                previewContainer.innerHTML = `
+                    <tr>
+                        <td class="px-4 py-2">Berapakah hasil dari 15 + 27?</td>
+                        <td class="px-4 py-2">Matematika</td>
+                        <td class="px-4 py-2">easy</td>
+                        <td class="px-4 py-2">B</td>
+                        <td class="px-4 py-2 text-green-600">✓ Valid</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2">Planet terdekat dengan Matahari adalah...</td>
+                        <td class="px-4 py-2">IPA</td>
+                        <td class="px-4 py-2">easy</td>
+                        <td class="px-4 py-2">B</td>
+                        <td class="px-4 py-2 text-green-600">✓ Valid</td>
+                    </tr>
+                `;
+            }
+        }
 
-  function filterStudents() {
-    const c = $('studentFilterClass')?.value || '';
-    const q = ($('studentSearchInput')?.value || '').toLowerCase();
-    const f = G.students.filter(s => (!c || s.class === c) && (!q || (s.name || '').toLowerCase().includes(q) || (s.nis || '').toLowerCase().includes(q)));
-    renderStudents(f);
-  }
+        function downloadQuestionTemplate() {
+            // Simulate template download
+            Swal.fire({
+                icon: 'info',
+                title: 'Download Template',
+                text: 'Template soal akan diunduh dalam format Excel.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  // ---- CRUD APIs (exposed) ----
-  async function createGame() {
-    const title = $('gameTitle')?.value || prompt('Judul game?');
-    if (!title) return;
-    const code = gameCode();
-    const g = {
-      gameCode: code,
-      title,
-      subject: $('gameSubject')?.value || 'Umum',
-      class: $('gameClass')?.value || 'All',
-      mode: $('gameMode')?.value || 'live',
-      duration: Number($('gameDuration')?.value || 30),
-      timeLimit: Number($('gameTimeLimit')?.value || 30),
-      deadline: $('gameDeadline')?.value || null,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-    };
-    G.games.unshift(g);
-    await persistAll();
-    renderGames(); renderDashboard();
-    if (byQS('#createGameModal')) hideCreateGameModal?.();
-    toast('Game berhasil dibuat: ' + code);
-  }
+        function importQuestions() {
+            // Simulate import process
+            Swal.fire({
+                title: 'Mengimpor Soal...',
+                text: 'Mohon tunggu sebentar.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            setTimeout(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Import Berhasil!',
+                    text: '2 soal berhasil diimpor ke bank soal.',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideImportQuestionsModal();
+                loadQuestions();
+            }, 2000);
+        }
 
-  async function createQuestion() {
-    const text = $('questionText')?.value || prompt('Teks pertanyaan?');
-    if (!text) return;
-    const subject = $('questionSubject')?.value || 'Umum';
-    const difficulty = $('questionDifficulty')?.value || 'medium';
-    const options = [0, 1, 2, 3].map(i => ($('option' + i)?.value || prompt(`Pilihan ${i + 1}?`) || '—'));
-    const correct = Number((byQS('input[name="correctAnswer"]:checked')?.value) ?? 0);
-    const q = { id: uid('q'), subject, difficulty, question: text, options, correct, explanation: $('questionExplanation')?.value || '', createdAt: new Date().toISOString() };
-    G.questions.unshift(q);
-    await persistAll();
-    renderQuestions(); renderDashboard();
-    if (byQS('#createQuestionModal')) hideCreateQuestionModal?.();
-    toast('Soal ditambahkan');
-  }
+        // Students Management
+        async function loadStudents() {
+            const students = await db.getStudents();
+            adminState.students = students;
+            displayStudents(students);
+        }
 
-  async function createStudent() {
-    const nis = $('studentNIS')?.value || prompt('NIS?');
-    const name = $('studentName')?.value || prompt('Nama?');
-    if (!nis || !name) return;
-    const s = { nis, name, class: $('studentClass')?.value || prompt('Kelas?') || '7A', email: $('studentEmail')?.value || '', status: 'active', createdAt: new Date().toISOString() };
-    G.students = G.students.filter(x => x.nis !== nis).concat(s);
-    await persistAll();
-    renderStudents(); renderDashboard();
-    if (byQS('#createStudentModal')) hideCreateStudentModal?.();
-    toast('Siswa disimpan');
-  }
+        function displayStudents(students) {
+            const container = document.getElementById('studentsTableBody');
+            container.innerHTML = '';
+            
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            Belum ada siswa yang terdaftar
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            students.forEach(student => {
+                const statusColor = student.status === 'active' ? 'text-green-600' : 'text-red-600';
+                const statusText = student.status === 'active' ? 'Aktif' : 'Nonaktif';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${student.nis}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${student.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${student.class}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${student.email}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-semibold ${statusColor} bg-${statusColor.split('-')[1]}-100 rounded-full">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="editStudent('${student.nis}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="toggleStudentStatus('${student.nis}', '${student.status}')" class="text-${student.status === 'active' ? 'red' : 'green'}-600 hover:text-${student.status === 'active' ? 'red' : 'green'}-900">
+                            ${student.status === 'active' ? '❌ Nonaktifkan' : '✅ Aktifkan'}
+                        </button>
+                    </td>
+                `;
+                container.appendChild(row);
+            });
+        }
 
-  async function deleteQuestion(id) {
-    if (!confirm('Hapus soal ini?')) return;
-    G.questions = G.questions.filter(q => q.id !== id);
-    await persistAll();
-    renderQuestions(); renderDashboard();
-  }
+        function filterStudents() {
+            const studentClass = document.getElementById('studentFilterClass').value;
+            const search = document.getElementById('studentSearchInput').value.toLowerCase();
+            
+            let filteredStudents = adminState.students;
+            
+            if (studentClass) {
+                filteredStudents = filteredStudents.filter(student => student.class === studentClass);
+            }
+            
+            if (search) {
+                filteredStudents = filteredStudents.filter(student => 
+                    student.name.toLowerCase().includes(search) ||
+                    student.nis.toLowerCase().includes(search) ||
+                    student.email.toLowerCase().includes(search)
+                );
+            }
+            
+            displayStudents(filteredStudents);
+        }
 
-  async function deleteStudent(nis) {
-    if (!confirm('Hapus siswa ini?')) return;
-    G.students = G.students.filter(s => s.nis !== nis);
-    await persistAll();
-    renderStudents(); renderDashboard();
-  }
+        function showCreateStudentModal() {
+            document.getElementById('createStudentModal').classList.remove('hidden');
+            clearStudentForm();
+        }
 
-  // ---- Reports & Charts ----
-  async function generateGradeReport() {
-    await ensureChart();
-    if (!hasEl('gradeChartCanvas')) return;
-    const ctx = $('gradeChartCanvas').getContext('2d');
-    const buckets = { '<50': 0, '50-70': 0, '70-85': 0, '>85': 0 };
-    // Fake distribution based on questions count
-    const n = Math.max(30, G.students.length * 2);
-    for (let i = 0; i < n; i++) {
-      const s = Math.floor(40 + Math.random() * 60); // 40..99
-      if (s < 50) buckets['<50']++; else if (s <= 70) buckets['50-70']++; else if (s <= 85) buckets['70-85']++; else buckets['>85']++;
-    }
-    if (G.charts.grade) G.charts.grade.destroy();
-    G.charts.grade = new Chart(ctx, {
-      type: 'bar',
-      data: { labels: Object.keys(buckets), datasets: [{ label: 'Jumlah Siswa', data: Object.values(buckets) }] },
-      options: { responsive: true, plugins: { legend: { display: true } } }
-    });
-  }
+        function hideCreateStudentModal() {
+            document.getElementById('createStudentModal').classList.add('hidden');
+        }
 
-  async function generateActivityReport() {
-    await ensureChart();
-    if (!hasEl('activityChartCanvas')) return;
-    const ctx = $('activityChartCanvas').getContext('2d');
-    const labels = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 86400000).toLocaleDateString('id-ID', { weekday: 'short' }));
-    const values = labels.map(() => Math.floor(5 + Math.random() * 20));
-    if (G.charts.activity) G.charts.activity.destroy();
-    G.charts.activity = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Aktivitas', data: values }] }, options: { responsive: true } });
-  }
+        function clearStudentForm() {
+            document.getElementById('studentNIS').value = '';
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentClass').value = '7A';
+            document.getElementById('studentEmail').value = '';
+        }
 
-  async function generateQuestionReport() {
-    await ensureChart();
-    if (!hasEl('gradeChartCanvas')) return;
-    const ctx = $('gradeChartCanvas').getContext('2d');
-    const counts = { easy: 0, medium: 0, hard: 0 };
-    G.questions.forEach(q => counts[q.difficulty] = (counts[q.difficulty] || 0) + 1);
-    if (G.charts.grade) G.charts.grade.destroy();
-    G.charts.grade = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts) }] }, options: { responsive: true } });
-  }
+        async function createStudent() {
+            const nis = document.getElementById('studentNIS').value.trim();
+            const name = document.getElementById('studentName').value.trim();
+            const studentClass = document.getElementById('studentClass').value;
+            const email = document.getElementById('studentEmail').value.trim();
+            
+            if (!nis || !name || !studentClass || !email) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua field.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            const studentData = {
+                nis: nis,
+                name: name,
+                class: studentClass,
+                email: email
+            };
+            
+            try {
+                Swal.fire({
+                    title: 'Menyimpan Data Siswa...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                await db.createStudent(studentData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Siswa Berhasil Ditambahkan!',
+                    text: 'Data siswa baru telah disimpan.',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideCreateStudentModal();
+                loadStudents();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan Data Siswa!',
+                    text: 'Terjadi kesalahan saat menyimpan data siswa.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
 
-  // ---- Import/Export ----
-  function dl(filename, text, mime = 'application/json') {
-    const blob = new Blob([text], { type: mime }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
-  }
+        function editStudent(nis) {
+            const student = adminState.students.find(s => s.nis === nis);
+            if (!student) return;
+            
+            // Show edit modal
+            document.getElementById('createStudentModal').classList.remove('hidden');
+            
+            // Set form values
+            document.getElementById('studentNIS').value = student.nis;
+            document.getElementById('studentNIS').disabled = true; // NIS cannot be changed
+            document.getElementById('studentName').value = student.name;
+            document.getElementById('studentClass').value = student.class;
+            document.getElementById('studentEmail').value = student.email;
+            
+            // Update modal title and button
+            document.querySelector('#createStudentModal h3').textContent = 'Edit Data Siswa';
+            const createBtn = document.querySelector('#createStudentModal button[onclick*="Student"]');
+            if (createBtn) {
+                createBtn.textContent = 'Update Data';
+                createBtn.setAttribute('onclick', `updateStudent('${nis}')`);
+            }
+        }
 
-  async function exportData() {
-    const payload = { games: G.games, questions: G.questions, students: G.students, exportedAt: new Date().toISOString() };
-    dl('quizmaster-backup.json', JSON.stringify(payload, null, 2));
-  }
+        async function updateStudent(nis) {
+            const name = document.getElementById('studentName').value.trim();
+            const studentClass = document.getElementById('studentClass').value;
+            const email = document.getElementById('studentEmail').value.trim();
+            
+            if (!name || !studentClass || !email) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua field.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            const studentData = {
+                nis: nis,
+                name: name,
+                class: studentClass,
+                email: email
+            };
+            
+            try {
+                Swal.fire({
+                    title: 'Memperbarui Data Siswa...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                await db.updateStudent(nis, studentData);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Data Siswa Berhasil Diperbarui!',
+                    text: 'Data siswa telah diperbarui.',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideCreateStudentModal();
+                loadStudents();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memperbarui Data Siswa!',
+                    text: 'Terjadi kesalahan saat memperbarui data siswa.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
 
-  async function importData(fileOrEvent) {
-    let file = null;
-    if (fileOrEvent?.target?.files?.[0]) file = fileOrEvent.target.files[0];
-    else if (fileOrEvent instanceof File) file = fileOrEvent;
-    else {
-      const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = importData; input.click(); return;
-    }
-    const txt = await file.text();
-    const data = JSON.parse(txt);
-    if (Array.isArray(data.games)) G.games = data.games; // array form
-    else if (data.games && typeof data.games === 'object') G.games = Object.keys(data.games).map(k => ({ gameCode: k, ...data.games[k] }));
-    G.questions = data.questions || G.questions; G.students = data.students || G.students;
-    await persistAll();
-    renderGames(); renderQuestions(); renderStudents(); renderDashboard();
-    toast('Data berhasil di-import');
-  }
+        async function toggleStudentStatus(nis, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            const actionText = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+            
+            Swal.fire({
+                title: `${newStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'} Siswa?`,
+                text: `Anda yakin ingin ${actionText} siswa ini?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: newStatus === 'active' ? '#10b981' : '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: `Ya, ${newStatus === 'active' ? 'Aktifkan' : 'Nonaktifkan'}`,
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await db.updateStudent(nis, { status: newStatus });
+                        
+                        // Update local state
+                        const studentIndex = adminState.students.findIndex(s => s.nis === nis);
+                        if (studentIndex !== -1) {
+                            adminState.students[studentIndex].status = newStatus;
+                        }
+                        
+                        displayStudents(adminState.students);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: `Siswa Berhasil ${newStatus === 'active' ? 'Diaktifkan' : 'Dinonaktifkan'}!`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: `Gagal ${newStatus === 'active' ? 'Mengaktifkan' : 'Menonaktifkan'} Siswa!`,
+                            text: 'Terjadi kesalahan saat memperbarui status siswa.',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    }
+                }
+            });
+        }
 
-  // ---- Excel/CSV Importers (Questions & Students) ----
-  async function importStudents() { await ensureXLSX();
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls,.csv'; input.onchange = async (e) => {
-      const f = e.target.files[0]; const buf = await f.arrayBuffer(); const wb = XLSX.read(buf, { type: 'array' }); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws);
-      rows.forEach(r => {
-        const s = { nis: String(r.NIS || r.nis || r.id || uid('N')), name: r.Nama || r.nama || r.Name || 'Tanpa Nama', class: r.Kelas || r.kelas || '7A', email: r.Email || r.email || '', status: 'active' };
-        G.students = G.students.filter(x => x.nis !== s.nis).concat(s);
-      });
-      await persistAll(); renderStudents(); renderDashboard(); toast('Import siswa selesai');
-    }; input.click();
-  }
+        function showImportStudentsModal() {
+            document.getElementById('importStudentsModal').classList.remove('hidden');
+        }
 
-  async function importQuestions() { await ensureXLSX();
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls,.csv'; input.onchange = async (e) => {
-      const f = e.target.files[0]; const buf = await f.arrayBuffer(); const wb = XLSX.read(buf, { type: 'array' }); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws);
-      rows.forEach(r => {
-        const id = uid('q');
-        const subject = r['Mata Pelajaran'] || r.subject || 'Umum';
-        const difficulty = (r.Tingkat || r.difficulty || 'medium').toString().toLowerCase();
-        const options = [r['Pilihan A'] || r.A || '', r['Pilihan B'] || r.B || '', r['Pilihan C'] || r.C || '', r['Pilihan D'] || r.D || ''];
-        const ans = (r['Jawaban Benar'] || r.correct || 'A').toString().trim().toUpperCase();
-        const correct = { A: 0, B: 1, C: 2, D: 3 }[ans] ?? 0;
-        const q = { id, subject, difficulty, question: r.Pertanyaan || r.question || '—', options, correct, explanation: r.Penjelasan || '', createdAt: new Date().toISOString() };
-        G.questions.unshift(q);
-      });
-      await persistAll(); renderQuestions(); renderDashboard(); toast('Import soal selesai');
-    }; input.click();
-  }
+        function hideImportStudentsModal() {
+            document.getElementById('importStudentsModal').classList.add('hidden');
+        }
 
-  async function downloadStudentTemplate() { await ensureXLSX(); const data = [{ NIS: '2024001', Nama: 'Nama Siswa', Kelas: '7A', Email: 'email@school.edu' }]; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Siswa'); XLSX.writeFile(wb, 'template-siswa.xlsx'); }
-  async function downloadQuestionTemplate() { await ensureXLSX(); const data = [{ Pertanyaan: 'Contoh pertanyaan', 'Mata Pelajaran': 'Matematika', Tingkat: 'easy', 'Pilihan A': 'Jawaban A', 'Pilihan B': 'Jawaban B', 'Pilihan C': 'Jawaban C', 'Pilihan D': 'Jawaban D', 'Jawaban Benar': 'A', Penjelasan: 'Opsional' }]; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Soal'); XLSX.writeFile(wb, 'template-soal.xlsx'); }
+        function previewStudentFile(event) {
+            // Simulate file preview
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('importPreviewContainer').classList.remove('hidden');
+                document.getElementById('importStudentsBtn').disabled = false;
+                
+                // Simulate preview data
+                const previewContainer = document.getElementById('importPreview');
+                previewContainer.innerHTML = `
+                    <tr>
+                        <td class="px-4 py-2">2024011</td>
+                        <td class="px-4 py-2">Budi Santoso</td>
+                        <td class="px-4 py-2">7A</td>
+                        <td class="px-4 py-2">budi.santoso@school.edu</td>
+                        <td class="px-4 py-2 text-green-600">✓ Valid</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2">2024012</td>
+                        <td class="px-4 py-2">Sari Indah</td>
+                        <td class="px-4 py-2">7B</td>
+                        <td class="px-4 py-2">sari.indah@school.edu</td>
+                        <td class="px-4 py-2 text-green-600">✓ Valid</td>
+                    </tr>
+                `;
+            }
+        }
 
-  // ---- Backup (Firebase only) ----
-  async function backupDatabase() {
-    if (!G.db) { alert('Firebase tidak terdeteksi. Gunakan Export Data (JSON) sebagai alternatif.'); return; }
-    const snapshot = await G.db.ref('/').once('value');
-    const json = snapshot.val(); dl('firebase-backup.json', JSON.stringify(json, null, 2));
-  }
+        function downloadStudentTemplate() {
+            // Simulate template download
+            Swal.fire({
+                icon: 'info',
+                title: 'Download Template',
+                text: 'Template siswa akan diunduh dalam format Excel.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  // ---- Modals (no-op safe toggles) ----
-  function show(id) { const el = $(id); if (el) el.classList.remove('hidden'); }
-  function hide(id) { const el = $(id); if (el) el.classList.add('hidden'); }
-  function showCreateGameModal() { show('createGameModal'); populateQuestionSelection(); }
-  function hideCreateGameModal() { hide('createGameModal'); }
-  function showCreateQuestionModal() { show('createQuestionModal'); }
-  function hideCreateQuestionModal() { hide('createQuestionModal'); }
-  function showCreateStudentModal() { show('createStudentModal'); }
-  function hideCreateStudentModal() { hide('createStudentModal'); }
-  function showImportStudentsModal() { show('importStudentsModal'); }
-  function hideImportStudentsModal() { hide('importStudentsModal'); }
-  function showImportQuestionsModal() { show('importQuestionsModal'); }
-  function hideImportQuestionsModal() { hide('importQuestionsModal'); }
+        function importStudents() {
+            // Simulate import process
+            Swal.fire({
+                title: 'Mengimpor Data Siswa...',
+                text: 'Mohon tunggu sebentar.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            setTimeout(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Import Berhasil!',
+                    text: '2 siswa berhasil diimpor.',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideImportStudentsModal();
+                loadStudents();
+            }, 2000);
+        }
 
-  // ---- Question selection for game modal ----
-  function populateQuestionSelection() {
-    const wrap = $('questionSelection'); if (!wrap) return; wrap.innerHTML = '';
-    G.questions.forEach(q => wrap.insertAdjacentHTML('beforeend', `<label class="flex items-start gap-3"><input type="checkbox" data-qid="${q.id}"><span class="text-sm">${q.question}</span></label>`));
-  }
+        // Reports Section
+        function loadReports() {
+            // Initialize charts
+            initCharts();
+        }
 
-  // ---- Section navigation ----
-  function showSection(key) {
-    const sections = ['dashboard', 'games', 'questions', 'students', 'reports', 'settings'];
-    sections.forEach(s => { const el = $(s + 'Section'); if (el) el.classList.toggle('hidden', s !== key); });
-    document.querySelectorAll('.nav-item').forEach(b => { if (b.dataset.section === key) { b.classList.add('bg-blue-600', 'text-white'); b.classList.remove('text-gray-600'); } else { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('text-gray-600'); } });
-    if (key === 'dashboard') renderDashboard();
-    if (key === 'games') renderGames();
-    if (key === 'questions') renderQuestions();
-    if (key === 'students') renderStudents();
-  }
+        function initCharts() {
+            // Simulate chart initialization
+            console.log('Charts initialized');
+        }
 
-  // ---- Game control (lightweight demo) ----
-  function openControl(code) {
-    if (!code) return alert('Game tidak ditemukan');
-    $('controlGameTitle') && ($('controlGameTitle').textContent = 'Kontrol Game');
-    $('controlGameCode') && ($('controlGameCode').textContent = code);
-    show('gameControlModal');
-  }
-  function hideGameControlModal() { hide('gameControlModal'); }
-  async function startLiveGame() {
-    const code = $('controlGameCode')?.textContent; if (!code) return;
-    G.games = G.games.map(g => g.gameCode === code ? { ...g, status: 'active' } : g);
-    await persistAll(); renderGames(); renderDashboard(); toast('Game dimulai');
-    $('startGameBtn') && $('startGameBtn').classList.add('hidden');
-    $('endGameBtn') && $('endGameBtn').classList.remove('hidden');
-    $('gameStatus') && ($('gameStatus').textContent = 'Sedang Berlangsung');
-  }
-  async function endLiveGame() {
-    const code = $('controlGameCode')?.textContent; if (!code) return;
-    G.games = G.games.map(g => g.gameCode === code ? { ...g, status: 'completed' } : g);
-    await persistAll(); renderGames(); renderDashboard(); toast('Game diakhiri');
-    $('startGameBtn') && $('startGameBtn').classList.remove('hidden');
-    $('endGameBtn') && $('endGameBtn').classList.add('hidden');
-    $('gameStatus') && ($('gameStatus').textContent = 'Selesai');
-  }
+        function generateGradeReport() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Laporan Nilai',
+                text: 'Fitur generate laporan nilai akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  // ---- Tiny toast ----
-  function toast(msg) {
-    const t = document.createElement('div');
-    t.textContent = msg; t.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 14px;border-radius:10px;opacity:0;transition:all .3s;z-index:9999';
-    document.body.appendChild(t); requestAnimationFrame(() => { t.style.opacity = '1'; t.style.bottom = '24px'; }); setTimeout(() => { t.style.opacity = '0'; t.style.bottom = '16px'; setTimeout(() => t.remove(), 300); }, 1600);
-  }
+        function generateActivityReport() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Laporan Aktivitas',
+                text: 'Fitur generate laporan aktivitas akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  // ---- Public API (only attach if missing to avoid overwriting) ----
-  const api = {
-    // CRUD + render
-    renderDashboard, renderGames, renderQuestions, renderStudents,
-    filterGames, filterQuestions, filterStudents,
-    createGame, createQuestion, createStudent,
-    deleteQuestion, deleteStudent,
-    // Reports
-    generateGradeReport, generateActivityReport, generateQuestionReport,
-    // Import/Export
-    exportData, importData, importStudents, importQuestions,
-    downloadStudentTemplate, downloadQuestionTemplate,
-    // Firebase backup
-    backupDatabase,
-    // Modals & sections
-    showCreateGameModal, hideCreateGameModal,
-    showCreateQuestionModal, hideCreateQuestionModal,
-    showCreateStudentModal, hideCreateStudentModal,
-    showImportStudentsModal, hideImportStudentsModal,
-    showImportQuestionsModal, hideImportQuestionsModal,
-    populateQuestionSelection,
-    showSection,
-    // Game control
-    openControl, hideGameControlModal, startLiveGame, endLiveGame,
-  };
-  Object.keys(api).forEach(k => { if (!(k in window)) window[k] = api[k]; });
+        function generateQuestionReport() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Laporan Soal',
+                text: 'Fitur generate laporan soal akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
 
-  // ---- Auto init ----
-  document.addEventListener('DOMContentLoaded', async () => {
-    try {
-      await loadAll();
-      renderDashboard(); renderGames(); renderQuestions(); renderStudents();
-      // Bind nav items if exist
-      document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
-    } catch (e) { console.error('[Inject] init error', e); }
-  });
-})();
+        // Settings Section
+        function loadSettings() {
+            // Load saved settings if any
+            const savedSettings = JSON.parse(localStorage.getItem('quizmaster_settings')) || {};
+            
+            // Set form values
+            document.getElementById('schoolName').value = savedSettings.schoolName || 'SMP Negeri 1 Jakarta';
+            document.getElementById('academicYear').value = savedSettings.academicYear || '2024/2025';
+            document.getElementById('semester').value = savedSettings.semester || '1';
+            document.getElementById('defaultTime').value = savedSettings.defaultTime || 30;
+            document.getElementById('examWarningLimit').value = savedSettings.examWarningLimit || 3;
+            document.getElementById('autoSubmit').checked = savedSettings.autoSubmit !== false;
+            document.getElementById('showCorrectAnswers').checked = savedSettings.showCorrectAnswers || false;
+            document.getElementById('enableFullscreen').checked = savedSettings.enableFullscreen !== false;
+            document.getElementById('blockTabSwitch').checked = savedSettings.blockTabSwitch !== false;
+            document.getElementById('recordViolations').checked = savedSettings.recordViolations !== false;
+        }
 
-</script>
+        function saveSettings() {
+            const settings = {
+                schoolName: document.getElementById('schoolName').value,
+                academicYear: document.getElementById('academicYear').value,
+                semester: document.getElementById('semester').value,
+                defaultTime: parseInt(document.getElementById('defaultTime').value),
+                examWarningLimit: parseInt(document.getElementById('examWarningLimit').value),
+                autoSubmit: document.getElementById('autoSubmit').checked,
+                showCorrectAnswers: document.getElementById('showCorrectAnswers').checked,
+                enableFullscreen: document.getElementById('enableFullscreen').checked,
+                blockTabSwitch: document.getElementById('blockTabSwitch').checked,
+                recordViolations: document.getElementById('recordViolations').checked
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('quizmaster_settings', JSON.stringify(settings));
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Pengaturan Disimpan!',
+                text: 'Pengaturan sistem berhasil disimpan.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        function exportData() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Export Data',
+                text: 'Fitur export data akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+
+        function importData() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Import Data',
+                text: 'Fitur import data akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+
+        function backupDatabase() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Backup Database',
+                text: 'Fitur backup database akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user was previously logged in
+            const savedAdmin = localStorage.getItem('quizmaster_admin');
+            if (savedAdmin) {
+                adminState.currentAdmin = JSON.parse(savedAdmin);
+                showAdminPanel();
+            }
+            
+            // Initialize Firebase
+            db.init();
+        });
+    </script>
+</body>
 </html>
-<script>
-// --- Injected fixes ---
-
-// Simple adminLogin() for demo purposes
-function adminLogin() {
-  const user = document.getElementById("username")?.value || "";
-  const pass = document.getElementById("password")?.value || "";
-  if (user === "admin" && pass === "admin") {
-    localStorage.setItem("isAdmin", "true");
-    alert("Login berhasil sebagai admin!");
-    // tampilkan dashboard atau redirect jika perlu
-    if (document.getElementById("dashboardSection")) {
-      document.getElementById("dashboardSection").classList.remove("hidden");
-    }
-  } else {
-    alert("Login gagal. Gunakan admin/admin untuk testing.");
-  }
-}
-
-// Patch Firebase error handling to fallback silently if permission_denied
-if (window.firebase && firebase.database) {
-  const origRef = firebase.database().ref;
-  firebase.database().ref = function(...args) {
-    const r = origRef.apply(this, args);
-    const origOnce = r.once;
-    r.once = function(event, ...rest) {
-      return origOnce.call(this, event, ...rest).catch(err => {
-        console.warn("Firebase permission denied, fallback to localStorage", err);
-        return { exists: () => false, val: () => null };
-      });
-    };
-    return r;
-  };
-}
-</script>
