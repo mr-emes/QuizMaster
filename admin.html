@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuizMaster Pro - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -48,6 +50,20 @@
         @keyframes slideUp {
             from { transform: translateY(30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
+        }
+
+        .mode-live { background: linear-gradient(135deg, #10b981, #059669); }
+        .mode-assignment { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .mode-exam { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        
+        .drag-drop-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        
+        .drag-drop-area.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
         }
     </style>
 </head>
@@ -181,9 +197,17 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Data Siswa</h2>
                     <p class="text-gray-600">Kelola data siswa (NIS, Nama, Kelas)</p>
                 </div>
-                <button onclick="showAddStudentModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors">
-                    ➕ Tambah Siswa
-                </button>
+                <div class="flex space-x-3">
+                    <button onclick="downloadStudentTemplate()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        📥 Template Excel
+                    </button>
+                    <button onclick="showImportStudentsModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        📤 Import Excel
+                    </button>
+                    <button onclick="showAddStudentModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors">
+                        ➕ Tambah Siswa
+                    </button>
+                </div>
             </div>
             
             <div class="bg-white rounded-xl shadow-sm">
@@ -233,9 +257,17 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Manajemen Quiz</h2>
                     <p class="text-gray-600">Buat dan kelola quiz untuk siswa</p>
                 </div>
-                <button onclick="showCreateQuizModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors">
-                    ➕ Buat Quiz Baru
-                </button>
+                <div class="flex space-x-3">
+                    <button onclick="downloadQuizTemplate()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        📥 Template Soal
+                    </button>
+                    <button onclick="showImportQuizModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        📤 Import Soal
+                    </button>
+                    <button onclick="showCreateQuizModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors">
+                        ➕ Buat Quiz Baru
+                    </button>
+                </div>
             </div>
             
             <div id="quizzesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -298,6 +330,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mapel</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materi</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                             </tr>
@@ -306,6 +339,158 @@
                             <!-- Grades will be populated here -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Students Modal -->
+    <div id="importStudentsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Import Data Siswa</h3>
+                <button onclick="hideImportStudentsModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-900 mb-2">📋 Petunjuk Import:</h4>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>• Download template Excel terlebih dahulu</li>
+                        <li>• Isi data sesuai format: NIS, Nama, Kelas</li>
+                        <li>• Upload file Excel (.xlsx atau .xls)</li>
+                        <li>• Sistem akan validasi data secara otomatis</li>
+                    </ul>
+                </div>
+                
+                <div class="drag-drop-area rounded-lg p-8 text-center" id="studentDropArea">
+                    <div class="text-4xl mb-4">📁</div>
+                    <p class="text-lg font-medium text-gray-700 mb-2">Drag & Drop file Excel di sini</p>
+                    <p class="text-sm text-gray-500 mb-4">atau klik untuk memilih file</p>
+                    <input type="file" id="studentFileInput" accept=".xlsx,.xls" class="hidden">
+                    <button onclick="document.getElementById('studentFileInput').click()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Pilih File Excel
+                    </button>
+                </div>
+                
+                <div id="studentPreviewContainer" class="hidden">
+                    <h4 class="font-semibold text-gray-900 mb-3">Preview Data:</h4>
+                    <div class="max-h-60 overflow-y-auto border rounded-lg">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">NIS</th>
+                                    <th class="px-4 py-2 text-left">Nama</th>
+                                    <th class="px-4 py-2 text-left">Kelas</th>
+                                    <th class="px-4 py-2 text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentPreviewBody">
+                                <!-- Preview data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button onclick="hideImportStudentsModal()" class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button id="importStudentsBtn" onclick="importStudents()" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:bg-gray-400" disabled>
+                        Import Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Quiz Modal -->
+    <div id="importQuizModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Import Soal Quiz</h3>
+                <button onclick="hideImportQuizModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mata Pelajaran</label>
+                    <select id="importQuizSubject" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="">Pilih Mapel</option>
+                        <option value="Matematika">Matematika</option>
+                        <option value="IPA">IPA</option>
+                        <option value="IPS">IPS</option>
+                        <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                        <option value="Bahasa Inggris">Bahasa Inggris</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                    <select id="importQuizClass" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="">Pilih Kelas</option>
+                        <option value="7A">7A</option>
+                        <option value="7B">7B</option>
+                        <option value="8A">8A</option>
+                        <option value="8B">8B</option>
+                        <option value="9A">9A</option>
+                        <option value="9B">9B</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Materi</label>
+                    <input type="text" id="importQuizMaterial" placeholder="Contoh: Aljabar Linear" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Judul Quiz</label>
+                    <input type="text" id="importQuizTitle" placeholder="Contoh: Quiz Aljabar Linear" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-900 mb-2">📋 Format Template Soal:</h4>
+                    <ul class="text-sm text-green-800 space-y-1">
+                        <li>• <strong>Kolom A:</strong> Pertanyaan/Soal</li>
+                        <li>• <strong>Kolom B:</strong> Pilihan A</li>
+                        <li>• <strong>Kolom C:</strong> Pilihan B</li>
+                        <li>• <strong>Kolom D:</strong> Pilihan C</li>
+                        <li>• <strong>Kolom E:</strong> Pilihan D</li>
+                        <li>• <strong>Kolom F:</strong> Jawaban Benar (A/B/C/D)</li>
+                        <li>• <strong>Kolom G:</strong> Waktu (detik, opsional, default 30)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="drag-drop-area rounded-lg p-8 text-center" id="quizDropArea">
+                    <div class="text-4xl mb-4">📝</div>
+                    <p class="text-lg font-medium text-gray-700 mb-2">Drag & Drop file Excel soal di sini</p>
+                    <p class="text-sm text-gray-500 mb-4">atau klik untuk memilih file</p>
+                    <input type="file" id="quizFileInput" accept=".xlsx,.xls" class="hidden">
+                    <button onclick="document.getElementById('quizFileInput').click()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Pilih File Excel
+                    </button>
+                </div>
+                
+                <div id="quizPreviewContainer" class="hidden">
+                    <h4 class="font-semibold text-gray-900 mb-3">Preview Soal:</h4>
+                    <div class="max-h-60 overflow-y-auto border rounded-lg">
+                        <div id="quizPreviewContent" class="p-4 space-y-4">
+                            <!-- Preview questions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button onclick="hideImportQuizModal()" class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button id="importQuizBtn" onclick="importQuiz()" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:bg-gray-400" disabled>
+                        Import Soal
+                    </button>
                 </div>
             </div>
         </div>
@@ -399,6 +584,128 @@
                     <input type="text" id="newQuizTitle" placeholder="Contoh: Quiz Aljabar Linear" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
             </div>
+
+            <!-- Quiz Mode Selection -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Mode Quiz</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="quiz-mode-card mode-live p-4 rounded-xl text-white cursor-pointer" onclick="selectQuizMode('live')">
+                        <div class="text-2xl mb-2">🎮</div>
+                        <h4 class="font-semibold mb-1">Live Quiz</h4>
+                        <p class="text-sm opacity-90">Dimainkan bersama secara real-time</p>
+                    </div>
+                    <div class="quiz-mode-card mode-assignment p-4 rounded-xl text-white cursor-pointer" onclick="selectQuizMode('assignment')">
+                        <div class="text-2xl mb-2">📝</div>
+                        <h4 class="font-semibold mb-1">Tugas/PR</h4>
+                        <p class="text-sm opacity-90">Ada batas waktu pengerjaan</p>
+                    </div>
+                    <div class="quiz-mode-card mode-exam p-4 rounded-xl text-white cursor-pointer" onclick="selectQuizMode('exam')">
+                        <div class="text-2xl mb-2">🎯</div>
+                        <h4 class="font-semibold mb-1">Ujian</h4>
+                        <p class="text-sm opacity-90">Mode ketat dengan pengawasan</p>
+                    </div>
+                </div>
+                <input type="hidden" id="selectedQuizMode" value="">
+            </div>
+
+            <!-- Mode-specific settings -->
+            <div id="modeSettings" class="mb-6 hidden">
+                <!-- Live mode settings -->
+                <div id="liveSettings" class="hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-green-900 mb-2">⚙️ Pengaturan Live Quiz</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-green-800 mb-1">Waktu per Soal (detik)</label>
+                                <input type="number" id="liveTimePerQuestion" value="30" min="10" max="300" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-green-800 mb-1">Tampilkan Leaderboard</label>
+                                <select id="liveShowLeaderboard" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment mode settings -->
+                <div id="assignmentSettings" class="hidden">
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-orange-900 mb-2">⚙️ Pengaturan Tugas/PR</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-orange-800 mb-1">Batas Waktu Pengerjaan</label>
+                                <input type="datetime-local" id="assignmentDeadline" class="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-orange-800 mb-1">Durasi Maksimal (menit)</label>
+                                <input type="number" id="assignmentDuration" value="60" min="10" max="480" class="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-orange-800 mb-1">Izin Kembali ke Soal</label>
+                                <select id="assignmentAllowBack" class="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-orange-800 mb-1">Tampilkan Nilai Langsung</label>
+                                <select id="assignmentShowScore" class="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exam mode settings -->
+                <div id="examSettings" class="hidden">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-red-900 mb-2">⚙️ Pengaturan Ujian</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-red-800 mb-1">Durasi Ujian (menit)</label>
+                                <input type="number" id="examDuration" value="90" min="30" max="240" class="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-red-800 mb-1">Acak Urutan Soal</label>
+                                <select id="examShuffleQuestions" class="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-red-800 mb-1">Acak Pilihan Jawaban</label>
+                                <select id="examShuffleOptions" class="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-red-800 mb-1">Blokir Tab Lain</label>
+                                <select id="examBlockTabs" class="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-red-800 mb-1">Fullscreen Wajib</label>
+                                <select id="examFullscreen" class="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                    <option value="true">Ya</option>
+                                    <option value="false">Tidak</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-red-800 mb-1">Peringatan Keluar</label>
+                                <input type="number" id="examWarningLimit" value="3" min="1" max="10" class="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <div class="mb-6">
                 <div class="flex justify-between items-center mb-4">
@@ -431,7 +738,11 @@
             students: [],
             quizzes: [],
             games: [],
-            grades: []
+            grades: [],
+            importData: {
+                students: [],
+                questions: []
+            }
         };
 
         // Firebase Database wrapper
@@ -484,6 +795,49 @@
                 } catch (error) {
                     console.error('Error adding student:', error);
                     appState.students.push(student);
+                    localStorage.setItem('students', JSON.stringify(appState.students));
+                    return true;
+                }
+            },
+
+            async addMultipleStudents(students) {
+                try {
+                    const { database, ref, update } = window.firebase;
+                    const updates = {};
+                    
+                    students.forEach(student => {
+                        updates[`students/${student.nis}`] = {
+                            name: student.name,
+                            class: student.class,
+                            createdAt: new Date().toISOString()
+                        };
+                    });
+                    
+                    await update(ref(database), updates);
+                    
+                    // Update local state
+                    students.forEach(student => {
+                        const existingIndex = appState.students.findIndex(s => s.nis === student.nis);
+                        if (existingIndex >= 0) {
+                            appState.students[existingIndex] = student;
+                        } else {
+                            appState.students.push(student);
+                        }
+                    });
+                    
+                    localStorage.setItem('students', JSON.stringify(appState.students));
+                    return true;
+                } catch (error) {
+                    console.error('Error adding multiple students:', error);
+                    // Fallback to local storage
+                    students.forEach(student => {
+                        const existingIndex = appState.students.findIndex(s => s.nis === student.nis);
+                        if (existingIndex >= 0) {
+                            appState.students[existingIndex] = student;
+                        } else {
+                            appState.students.push(student);
+                        }
+                    });
                     localStorage.setItem('students', JSON.stringify(appState.students));
                     return true;
                 }
@@ -545,7 +899,7 @@
                 }
             },
             
-            async createGame(quizId) {
+            async createGame(quizId, mode = 'live') {
                 try {
                     const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
                     const quiz = appState.quizzes.find(q => q.id === quizId);
@@ -557,6 +911,7 @@
                         material: quiz.material,
                         class: quiz.class,
                         gameCode: gameCode,
+                        mode: mode,
                         players: [],
                         started: false,
                         completed: false,
@@ -637,13 +992,31 @@
             if (username === 'admin' && password === 'admin123') {
                 showDashboard();
             } else {
-                alert('Username atau password salah!');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Gagal!',
+                    text: 'Username atau password salah!',
+                    confirmButtonColor: '#3b82f6'
+                });
             }
         }
 
         function logout() {
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('dashboardScreen').classList.add('hidden');
+            Swal.fire({
+                title: 'Konfirmasi Logout',
+                text: 'Yakin ingin keluar dari sistem?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                    document.getElementById('dashboardScreen').classList.add('hidden');
+                }
+            });
         }
 
         // Navigation
@@ -717,7 +1090,7 @@
                     gameDiv.innerHTML = `
                         <div>
                             <div class="font-medium text-sm">${game.quiz?.title || 'Quiz'}</div>
-                            <div class="text-xs text-gray-500">${game.subject} - ${game.class}</div>
+                            <div class="text-xs text-gray-500">${game.subject} - ${game.class} - ${game.mode?.toUpperCase()}</div>
                         </div>
                         <div class="text-xs text-gray-500">${game.gameCode}</div>
                     `;
@@ -781,6 +1154,459 @@
             });
         }
 
+        // Import Students Functions
+        function downloadStudentTemplate() {
+            const templateData = [
+                ['NIS', 'Nama', 'Kelas'],
+                ['2024001', 'Ahmad Fauzi', '7A'],
+                ['2024002', 'Siti Nurhaliza', '7A'],
+                ['2024003', 'Budi Santoso', '7B']
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Template Siswa');
+            
+            XLSX.writeFile(wb, 'Template_Data_Siswa.xlsx');
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Template Downloaded!',
+                text: 'Template Excel berhasil didownload. Silakan isi data siswa sesuai format.',
+                confirmButtonColor: '#10b981'
+            });
+        }
+
+        function showImportStudentsModal() {
+            document.getElementById('importStudentsModal').classList.remove('hidden');
+            setupStudentDropArea();
+        }
+
+        function hideImportStudentsModal() {
+            document.getElementById('importStudentsModal').classList.add('hidden');
+            document.getElementById('studentPreviewContainer').classList.add('hidden');
+            document.getElementById('importStudentsBtn').disabled = true;
+            appState.importData.students = [];
+        }
+
+        function setupStudentDropArea() {
+            const dropArea = document.getElementById('studentDropArea');
+            const fileInput = document.getElementById('studentFileInput');
+            
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('dragover');
+            });
+            
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('dragover');
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleStudentFile(files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleStudentFile(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleStudentFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Format File Salah!',
+                    text: 'Silakan upload file Excel (.xlsx atau .xls)',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    parseStudentData(jsonData);
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error Reading File!',
+                        text: 'Gagal membaca file Excel. Pastikan format file benar.',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseStudentData(data) {
+            const students = [];
+            const errors = [];
+            
+            // Skip header row
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                if (!row || row.length < 3) continue;
+                
+                const nis = String(row[0] || '').trim();
+                const name = String(row[1] || '').trim();
+                const className = String(row[2] || '').trim();
+                
+                let status = 'valid';
+                let errorMsg = '';
+                
+                // Validation
+                if (!nis || !name || !className) {
+                    status = 'error';
+                    errorMsg = 'Data tidak lengkap';
+                } else if (appState.students.find(s => s.nis === nis)) {
+                    status = 'duplicate';
+                    errorMsg = 'NIS sudah ada';
+                } else if (students.find(s => s.nis === nis)) {
+                    status = 'error';
+                    errorMsg = 'NIS duplikat dalam file';
+                }
+                
+                students.push({
+                    nis: nis,
+                    name: name,
+                    class: className,
+                    status: status,
+                    error: errorMsg
+                });
+            }
+            
+            appState.importData.students = students;
+            displayStudentPreview(students);
+        }
+
+        function displayStudentPreview(students) {
+            const container = document.getElementById('studentPreviewContainer');
+            const tbody = document.getElementById('studentPreviewBody');
+            tbody.innerHTML = '';
+            
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                let statusClass = '';
+                let statusText = '';
+                
+                switch (student.status) {
+                    case 'valid':
+                        statusClass = 'text-green-600';
+                        statusText = '✅ Valid';
+                        break;
+                    case 'duplicate':
+                        statusClass = 'text-yellow-600';
+                        statusText = '⚠️ Duplikat';
+                        break;
+                    case 'error':
+                        statusClass = 'text-red-600';
+                        statusText = '❌ Error';
+                        break;
+                }
+                
+                row.innerHTML = `
+                    <td class="px-4 py-2">${student.nis}</td>
+                    <td class="px-4 py-2">${student.name}</td>
+                    <td class="px-4 py-2">${student.class}</td>
+                    <td class="px-4 py-2 ${statusClass}">${statusText}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            container.classList.remove('hidden');
+            
+            const validStudents = students.filter(s => s.status === 'valid').length;
+            document.getElementById('importStudentsBtn').disabled = validStudents === 0;
+        }
+
+        async function importStudents() {
+            const validStudents = appState.importData.students.filter(s => s.status === 'valid');
+            
+            if (validStudents.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak Ada Data Valid!',
+                    text: 'Tidak ada data siswa yang valid untuk diimport.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            try {
+                Swal.fire({
+                    title: 'Importing Data...',
+                    text: 'Mohon tunggu, sedang mengimport data siswa.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                await db.addMultipleStudents(validStudents);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Import Berhasil!',
+                    text: `${validStudents.length} data siswa berhasil diimport.`,
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideImportStudentsModal();
+                displayStudents();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Import Gagal!',
+                    text: 'Terjadi kesalahan saat mengimport data.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
+        // Import Quiz Functions
+        function downloadQuizTemplate() {
+            const templateData = [
+                ['Pertanyaan', 'Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D', 'Jawaban Benar', 'Waktu (detik)'],
+                ['Berapa hasil dari 2 + 2?', '3', '4', '5', '6', 'B', '30'],
+                ['Ibu kota Indonesia adalah?', 'Jakarta', 'Surabaya', 'Bandung', 'Medan', 'A', '25'],
+                ['Planet terdekat dengan matahari adalah?', 'Venus', 'Merkurius', 'Bumi', 'Mars', 'B', '35']
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Template Soal');
+            
+            XLSX.writeFile(wb, 'Template_Soal_Quiz.xlsx');
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Template Downloaded!',
+                text: 'Template Excel soal berhasil didownload. Silakan isi soal sesuai format.',
+                confirmButtonColor: '#10b981'
+            });
+        }
+
+        function showImportQuizModal() {
+            document.getElementById('importQuizModal').classList.remove('hidden');
+            setupQuizDropArea();
+        }
+
+        function hideImportQuizModal() {
+            document.getElementById('importQuizModal').classList.add('hidden');
+            document.getElementById('quizPreviewContainer').classList.add('hidden');
+            document.getElementById('importQuizBtn').disabled = true;
+            appState.importData.questions = [];
+            
+            // Clear form
+            document.getElementById('importQuizSubject').value = '';
+            document.getElementById('importQuizClass').value = '';
+            document.getElementById('importQuizMaterial').value = '';
+            document.getElementById('importQuizTitle').value = '';
+        }
+
+        function setupQuizDropArea() {
+            const dropArea = document.getElementById('quizDropArea');
+            const fileInput = document.getElementById('quizFileInput');
+            
+            dropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropArea.classList.add('dragover');
+            });
+            
+            dropArea.addEventListener('dragleave', () => {
+                dropArea.classList.remove('dragover');
+            });
+            
+            dropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleQuizFile(files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleQuizFile(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleQuizFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Format File Salah!',
+                    text: 'Silakan upload file Excel (.xlsx atau .xls)',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    parseQuizData(jsonData);
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error Reading File!',
+                        text: 'Gagal membaca file Excel. Pastikan format file benar.',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseQuizData(data) {
+            const questions = [];
+            
+            // Skip header row
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                if (!row || row.length < 6) continue;
+                
+                const question = String(row[0] || '').trim();
+                const optionA = String(row[1] || '').trim();
+                const optionB = String(row[2] || '').trim();
+                const optionC = String(row[3] || '').trim();
+                const optionD = String(row[4] || '').trim();
+                const correctAnswer = String(row[5] || '').trim().toUpperCase();
+                const timeLimit = parseInt(row[6]) || 30;
+                
+                if (question && optionA && optionB && optionC && optionD && ['A', 'B', 'C', 'D'].includes(correctAnswer)) {
+                    const correctIndex = ['A', 'B', 'C', 'D'].indexOf(correctAnswer);
+                    
+                    questions.push({
+                        question: question,
+                        options: [optionA, optionB, optionC, optionD],
+                        correct: correctIndex,
+                        timeLimit: timeLimit
+                    });
+                }
+            }
+            
+            appState.importData.questions = questions;
+            displayQuizPreview(questions);
+        }
+
+        function displayQuizPreview(questions) {
+            const container = document.getElementById('quizPreviewContainer');
+            const content = document.getElementById('quizPreviewContent');
+            content.innerHTML = '';
+            
+            questions.forEach((question, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'border rounded-lg p-4';
+                questionDiv.innerHTML = `
+                    <h5 class="font-semibold text-gray-900 mb-2">Soal ${index + 1}</h5>
+                    <p class="text-gray-800 mb-3">${question.question}</p>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        ${question.options.map((option, optIndex) => `
+                            <div class="p-2 bg-gray-50 rounded ${optIndex === question.correct ? 'bg-green-100 border border-green-300' : ''}">
+                                <strong>${String.fromCharCode(65 + optIndex)}.</strong> ${option}
+                                ${optIndex === question.correct ? ' ✅' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-2 text-xs text-gray-600">Waktu: ${question.timeLimit} detik</div>
+                `;
+                content.appendChild(questionDiv);
+            });
+            
+            container.classList.remove('hidden');
+            document.getElementById('importQuizBtn').disabled = questions.length === 0;
+        }
+
+        async function importQuiz() {
+            const subject = document.getElementById('importQuizSubject').value;
+            const className = document.getElementById('importQuizClass').value;
+            const material = document.getElementById('importQuizMaterial').value.trim();
+            const title = document.getElementById('importQuizTitle').value.trim();
+            
+            if (!subject || !className || !material || !title) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua data quiz.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            if (appState.importData.questions.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak Ada Soal!',
+                    text: 'Tidak ada soal yang valid untuk diimport.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            try {
+                Swal.fire({
+                    title: 'Importing Quiz...',
+                    text: 'Mohon tunggu, sedang mengimport soal quiz.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                const quiz = {
+                    subject: subject,
+                    class: className,
+                    material: material,
+                    title: title,
+                    questions: appState.importData.questions,
+                    mode: 'live' // Default mode
+                };
+                
+                await db.addQuiz(quiz);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Import Berhasil!',
+                    text: `Quiz dengan ${appState.importData.questions.length} soal berhasil diimport.`,
+                    confirmButtonColor: '#10b981'
+                });
+                
+                hideImportQuizModal();
+                displayQuizzes();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Import Gagal!',
+                    text: 'Terjadi kesalahan saat mengimport quiz.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        }
+
         function showAddStudentModal() {
             document.getElementById('addStudentModal').classList.remove('hidden');
         }
@@ -799,13 +1625,23 @@
             const className = document.getElementById('newStudentClass').value;
             
             if (!nis || !name || !className) {
-                alert('Mohon lengkapi semua data!');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua data siswa.',
+                    confirmButtonColor: '#f59e0b'
+                });
                 return;
             }
             
             // Check if NIS already exists
             if (appState.students.find(s => s.nis === nis)) {
-                alert('NIS sudah terdaftar!');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'NIS Sudah Ada!',
+                    text: 'NIS tersebut sudah terdaftar dalam sistem.',
+                    confirmButtonColor: '#ef4444'
+                });
                 return;
             }
             
@@ -816,24 +1652,57 @@
                 createdAt: new Date().toISOString()
             };
             
-            const success = await db.addStudent(student);
-            if (success) {
-                alert('Siswa berhasil ditambahkan! 🎉');
-                hideAddStudentModal();
-                displayStudents();
-            } else {
-                alert('Gagal menambahkan siswa. Coba lagi.');
+            try {
+                const success = await db.addStudent(student);
+                if (success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Siswa berhasil ditambahkan ke sistem.',
+                        confirmButtonColor: '#10b981'
+                    });
+                    hideAddStudentModal();
+                    displayStudents();
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menambah Siswa!',
+                    text: 'Terjadi kesalahan saat menambah siswa.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         }
 
         async function deleteStudentConfirm(nis) {
-            if (confirm('Yakin ingin menghapus data siswa ini?')) {
+            const result = await Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Yakin ingin menghapus data siswa ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+            
+            if (result.isConfirmed) {
                 const success = await db.deleteStudent(nis);
                 if (success) {
-                    alert('Data siswa berhasil dihapus!');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Data siswa berhasil dihapus.',
+                        confirmButtonColor: '#10b981'
+                    });
                     displayStudents();
                 } else {
-                    alert('Gagal menghapus data siswa.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: 'Gagal menghapus data siswa.',
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             }
         }
@@ -854,29 +1723,42 @@
             }
             
             appState.quizzes.forEach(quiz => {
+                const modeClass = quiz.mode === 'live' ? 'mode-live' : quiz.mode === 'assignment' ? 'mode-assignment' : 'mode-exam';
+                const modeIcon = quiz.mode === 'live' ? '🎮' : quiz.mode === 'assignment' ? '📝' : '🎯';
+                const modeText = quiz.mode === 'live' ? 'Live' : quiz.mode === 'assignment' ? 'Tugas' : 'Ujian';
+                
                 const quizCard = document.createElement('div');
-                quizCard.className = 'bg-white rounded-xl shadow-sm p-6 card-hover';
+                quizCard.className = 'bg-white rounded-xl shadow-sm overflow-hidden card-hover';
                 quizCard.innerHTML = `
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${quiz.title}</h3>
-                        <div class="space-y-1 text-sm text-gray-600">
-                            <div>📚 ${quiz.subject}</div>
-                            <div>🎯 ${quiz.material}</div>
-                            <div>👥 ${quiz.class}</div>
-                            <div>📝 ${quiz.questions?.length || 0} soal</div>
+                    <div class="${modeClass} p-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-2xl">${modeIcon}</span>
+                                <span class="font-semibold">${modeText}</span>
+                            </div>
+                            <span class="text-sm opacity-75">${quiz.questions?.length || 0} soal</span>
                         </div>
                     </div>
                     
-                    <div class="flex space-x-2">
-                        <button onclick="hostQuiz('${quiz.id}')" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm">
-                            🎮 Host
-                        </button>
-                        <button onclick="editQuiz('${quiz.id}')" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                            ✏️ Edit
-                        </button>
-                        <button onclick="deleteQuizConfirm('${quiz.id}')" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm">
-                            🗑️ Hapus
-                        </button>
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${quiz.title}</h3>
+                        <div class="space-y-1 text-sm text-gray-600 mb-4">
+                            <div>📚 ${quiz.subject}</div>
+                            <div>🎯 ${quiz.material}</div>
+                            <div>👥 ${quiz.class}</div>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button onclick="hostQuiz('${quiz.id}', '${quiz.mode}')" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                                🚀 Host
+                            </button>
+                            <button onclick="editQuiz('${quiz.id}')" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                ✏️ Edit
+                            </button>
+                            <button onclick="deleteQuizConfirm('${quiz.id}')" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                                🗑️ Hapus
+                            </button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(quizCard);
@@ -886,11 +1768,53 @@
         function showCreateQuizModal() {
             document.getElementById('createQuizModal').classList.remove('hidden');
             document.getElementById('quizQuestionsContainer').innerHTML = '';
+            document.getElementById('modeSettings').classList.add('hidden');
             addQuizQuestion(); // Add first question
         }
 
         function hideCreateQuizModal() {
             document.getElementById('createQuizModal').classList.add('hidden');
+            // Clear form
+            document.getElementById('newQuizSubject').value = '';
+            document.getElementById('newQuizClass').value = '';
+            document.getElementById('newQuizMaterial').value = '';
+            document.getElementById('newQuizTitle').value = '';
+            document.getElementById('selectedQuizMode').value = '';
+            
+            // Reset mode cards
+            document.querySelectorAll('.quiz-mode-card').forEach(card => {
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1)';
+            });
+        }
+
+        function selectQuizMode(mode) {
+            document.getElementById('selectedQuizMode').value = mode;
+            
+            // Update visual selection
+            document.querySelectorAll('.quiz-mode-card').forEach(card => {
+                card.style.opacity = '0.5';
+                card.style.transform = 'scale(0.95)';
+            });
+            
+            event.currentTarget.style.opacity = '1';
+            event.currentTarget.style.transform = 'scale(1.05)';
+            
+            // Show mode-specific settings
+            document.getElementById('modeSettings').classList.remove('hidden');
+            document.getElementById('liveSettings').classList.add('hidden');
+            document.getElementById('assignmentSettings').classList.add('hidden');
+            document.getElementById('examSettings').classList.add('hidden');
+            
+            document.getElementById(mode + 'Settings').classList.remove('hidden');
+            
+            // Set default deadline for assignment mode
+            if (mode === 'assignment') {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(23, 59);
+                document.getElementById('assignmentDeadline').value = tomorrow.toISOString().slice(0, 16);
+            }
         }
 
         let questionCounter = 0;
@@ -949,15 +1873,26 @@
             const className = document.getElementById('newQuizClass').value;
             const material = document.getElementById('newQuizMaterial').value.trim();
             const title = document.getElementById('newQuizTitle').value.trim();
+            const mode = document.getElementById('selectedQuizMode').value;
             const questionItems = document.querySelectorAll('.question-item');
 
-            if (!subject || !className || !material || !title) {
-                alert('Mohon lengkapi data quiz!');
+            if (!subject || !className || !material || !title || !mode) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap!',
+                    text: 'Mohon lengkapi semua data quiz dan pilih mode quiz.',
+                    confirmButtonColor: '#f59e0b'
+                });
                 return;
             }
 
             if (questionItems.length === 0) {
-                alert('Mohon tambahkan minimal 1 pertanyaan!');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak Ada Soal!',
+                    text: 'Mohon tambahkan minimal 1 pertanyaan.',
+                    confirmButtonColor: '#f59e0b'
+                });
                 return;
             }
 
@@ -971,7 +1906,12 @@
                 const timeLimit = parseInt(item.querySelector('.time-limit').value);
 
                 if (!questionText || options.some(opt => !opt) || correctAnswer === '') {
-                    alert(`Soal ${index + 1} belum lengkap!`);
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Soal Tidak Lengkap!',
+                        text: `Soal ${index + 1} belum lengkap. Mohon lengkapi semua field.`,
+                        confirmButtonColor: '#f59e0b'
+                    });
                     isValid = false;
                     return;
                 }
@@ -986,37 +1926,112 @@
 
             if (!isValid) return;
 
+            // Collect mode-specific settings
+            const modeSettings = {};
+            
+            if (mode === 'live') {
+                modeSettings.timePerQuestion = parseInt(document.getElementById('liveTimePerQuestion').value);
+                modeSettings.showLeaderboard = document.getElementById('liveShowLeaderboard').value === 'true';
+            } else if (mode === 'assignment') {
+                modeSettings.deadline = document.getElementById('assignmentDeadline').value;
+                modeSettings.duration = parseInt(document.getElementById('assignmentDuration').value);
+                modeSettings.allowBack = document.getElementById('assignmentAllowBack').value === 'true';
+                modeSettings.showScore = document.getElementById('assignmentShowScore').value === 'true';
+            } else if (mode === 'exam') {
+                modeSettings.duration = parseInt(document.getElementById('examDuration').value);
+                modeSettings.shuffleQuestions = document.getElementById('examShuffleQuestions').value === 'true';
+                modeSettings.shuffleOptions = document.getElementById('examShuffleOptions').value === 'true';
+                modeSettings.blockTabs = document.getElementById('examBlockTabs').value === 'true';
+                modeSettings.fullscreen = document.getElementById('examFullscreen').value === 'true';
+                modeSettings.warningLimit = parseInt(document.getElementById('examWarningLimit').value);
+            }
+
             const quiz = {
                 subject: subject,
                 class: className,
                 material: material,
                 title: title,
-                questions: questions
+                mode: mode,
+                questions: questions,
+                settings: modeSettings
             };
 
             try {
+                Swal.fire({
+                    title: 'Menyimpan Quiz...',
+                    text: 'Mohon tunggu, sedang menyimpan quiz.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
                 await db.addQuiz(quiz);
-                alert('Quiz berhasil disimpan! 🎉');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Quiz Berhasil Disimpan!',
+                    text: `Quiz "${title}" dengan ${questions.length} soal berhasil dibuat.`,
+                    confirmButtonColor: '#10b981'
+                });
+                
                 hideCreateQuizModal();
                 displayQuizzes();
             } catch (error) {
-                alert('Quiz disimpan secara offline. Akan disinkronkan saat online.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan!',
+                    text: 'Quiz disimpan secara offline. Akan disinkronkan saat online.',
+                    confirmButtonColor: '#f59e0b'
+                });
                 hideCreateQuizModal();
                 displayQuizzes();
             }
         }
 
-        async function hostQuiz(quizId) {
+        async function hostQuiz(quizId, mode = 'live') {
             try {
-                const gameCode = await db.createGame(quizId);
+                const gameCode = await db.createGame(quizId, mode);
                 if (gameCode) {
-                    alert(`Game berhasil dibuat!\nKode Game: ${gameCode}\n\nBagikan kode ini ke siswa untuk bergabung.`);
+                    const quiz = appState.quizzes.find(q => q.id === quizId);
+                    const modeText = mode === 'live' ? 'Live Quiz' : mode === 'assignment' ? 'Tugas/PR' : 'Ujian';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: `${modeText} Berhasil Dibuat!`,
+                        html: `
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-indigo-600 mb-2">${gameCode}</div>
+                                <p class="text-gray-600 mb-4">Bagikan kode ini ke siswa untuk bergabung</p>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm text-gray-600">
+                                        <div><strong>Quiz:</strong> ${quiz.title}</div>
+                                        <div><strong>Mode:</strong> ${modeText}</div>
+                                        <div><strong>Soal:</strong> ${quiz.questions?.length || 0}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'OK'
+                    });
+                    
                     loadGamesData();
                 } else {
-                    alert('Gagal membuat game. Coba lagi.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Membuat Game!',
+                        text: 'Terjadi kesalahan saat membuat game.',
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             } catch (error) {
-                alert('Gagal membuat game. Coba lagi.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Membuat Game!',
+                    text: 'Terjadi kesalahan saat membuat game.',
+                    confirmButtonColor: '#ef4444'
+                });
                 console.error('Error hosting quiz:', error);
             }
         }
@@ -1039,18 +2054,29 @@
             }
             
             activeGames.forEach(game => {
+                const modeClass = game.mode === 'live' ? 'bg-green-100 text-green-800' : game.mode === 'assignment' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800';
+                const modeIcon = game.mode === 'live' ? '🎮' : game.mode === 'assignment' ? '📝' : '🎯';
+                const modeText = game.mode === 'live' ? 'Live' : game.mode === 'assignment' ? 'Tugas' : 'Ujian';
+                
                 const gameDiv = document.createElement('div');
                 gameDiv.className = 'bg-white rounded-xl shadow-sm p-6';
                 gameDiv.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">${game.quiz?.title || 'Quiz'}</h3>
+                            <div class="flex items-center space-x-3 mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900">${game.quiz?.title || 'Quiz'}</h3>
+                                <span class="px-3 py-1 rounded-full text-sm ${modeClass}">
+                                    ${modeIcon} ${modeText}
+                                </span>
+                            </div>
+                            
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
                                 <div>📚 ${game.subject}</div>
                                 <div>🎯 ${game.material}</div>
                                 <div>👥 ${game.class}</div>
                                 <div>🎮 ${game.gameCode}</div>
                             </div>
+                            
                             <div class="flex items-center space-x-4 text-sm">
                                 <span class="text-gray-600">Pemain: ${game.players?.length || 0}</span>
                                 <span class="px-2 py-1 rounded-full text-xs ${game.started ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
@@ -1058,6 +2084,7 @@
                                 </span>
                             </div>
                         </div>
+                        
                         <div class="flex flex-col space-y-2 ml-4">
                             <button onclick="monitorGame('${game.gameCode}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
                                 👁️ Monitor
@@ -1083,7 +2110,7 @@
             tbody.innerHTML = '';
             
             if (appState.grades.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Belum ada data nilai</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Belum ada data nilai</td></tr>';
                 return;
             }
             
@@ -1093,6 +2120,9 @@
                 
                 if (!student || !game) return;
                 
+                const modeText = game.mode === 'live' ? 'Live' : game.mode === 'assignment' ? 'Tugas' : 'Ujian';
+                const modeClass = game.mode === 'live' ? 'bg-green-100 text-green-800' : game.mode === 'assignment' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800';
+                
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
                 row.innerHTML = `
@@ -1101,6 +2131,9 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.class}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${game.subject}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${game.material}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${modeClass}">${modeText}</span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${grade.score >= 80 ? 'text-green-600' : grade.score >= 60 ? 'text-yellow-600' : 'text-red-600'}">${grade.score}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(grade.completedAt).toLocaleDateString('id-ID')}</td>
                 `;
@@ -1110,125 +2143,154 @@
 
         // Utility functions
         function editStudent(nis) {
-            alert('Fitur edit siswa akan segera hadir!');
+            Swal.fire({
+                icon: 'info',
+                title: 'Fitur Segera Hadir!',
+                text: 'Fitur edit siswa akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
         }
 
         function editQuiz(quizId) {
-            alert('Fitur edit quiz akan segera hadir!');
+            Swal.fire({
+                icon: 'info',
+                title: 'Fitur Segera Hadir!',
+                text: 'Fitur edit quiz akan segera tersedia.',
+                confirmButtonColor: '#3b82f6'
+            });
         }
 
-        function deleteQuizConfirm(quizId) {
-            if (confirm('Yakin ingin menghapus quiz ini?')) {
+        async function deleteQuizConfirm(quizId) {
+            const result = await Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Yakin ingin menghapus quiz ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+            
+            if (result.isConfirmed) {
                 // Implementation for delete quiz
-                alert('Quiz berhasil dihapus!');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Quiz berhasil dihapus.',
+                    confirmButtonColor: '#10b981'
+                });
                 displayQuizzes();
             }
         }
 
         function monitorGame(gameCode) {
-            alert(`Monitoring game ${gameCode}. Fitur akan segera hadir!`);
+            Swal.fire({
+                icon: 'info',
+                title: 'Fitur Segera Hadir!',
+                text: `Monitoring game ${gameCode} akan segera tersedia.`,
+                confirmButtonColor: '#3b82f6'
+            });
         }
 
-        function endGameConfirm(gameCode) {
-            if (confirm('Yakin ingin mengakhiri game ini?')) {
-                alert('Game berhasil diakhiri!');
+        async function endGameConfirm(gameCode) {
+            const result = await Swal.fire({
+                title: 'Konfirmasi Akhiri Game',
+                text: 'Yakin ingin mengakhiri game ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Akhiri',
+                cancelButtonText: 'Batal'
+            });
+            
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Game Diakhiri!',
+                    text: 'Game berhasil diakhiri.',
+                    confirmButtonColor: '#10b981'
+                });
                 loadGamesData();
             }
         }
 
         function exportStudents() {
-            alert('Export data siswa ke Excel. Fitur akan segera hadir!');
+            if (appState.students.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak Ada Data!',
+                    text: 'Tidak ada data siswa untuk diekspor.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            
+            const exportData = [
+                ['NIS', 'Nama', 'Kelas', 'Tanggal Daftar'],
+                ...appState.students.map(student => [
+                    student.nis,
+                    student.name,
+                    student.class,
+                    new Date(student.createdAt || Date.now()).toLocaleDateString('id-ID')
+                ])
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Data Siswa');
+            
+            XLSX.writeFile(wb, `Data_Siswa_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Export Berhasil!',
+                text: 'Data siswa berhasil diekspor ke Excel.',
+                confirmButtonColor: '#10b981'
+            });
         }
 
         function exportGrades() {
-            alert('Export data nilai ke Excel. Fitur akan segera hadir!');
-        }
-
-        // Search and filter functions
-        document.addEventListener('DOMContentLoaded', function() {
-            // Student search
-            document.getElementById('studentSearch').addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const classFilter = document.getElementById('classFilter').value;
-                
-                let filtered = appState.students.filter(student => {
-                    const matchesSearch = student.name.toLowerCase().includes(searchTerm) || 
-                                        student.nis.toLowerCase().includes(searchTerm);
-                    const matchesClass = !classFilter || student.class === classFilter;
-                    return matchesSearch && matchesClass;
+            if (appState.grades.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tidak Ada Data!',
+                    text: 'Tidak ada data nilai untuk diekspor.',
+                    confirmButtonColor: '#f59e0b'
                 });
-                
-                displayStudents(filtered);
-            });
-            
-            document.getElementById('classFilter').addEventListener('change', function(e) {
-                const classFilter = e.target.value;
-                const searchTerm = document.getElementById('studentSearch').value.toLowerCase();
-                
-                let filtered = appState.students.filter(student => {
-                    const matchesSearch = student.name.toLowerCase().includes(searchTerm) || 
-                                        student.nis.toLowerCase().includes(searchTerm);
-                    const matchesClass = !classFilter || student.class === classFilter;
-                    return matchesSearch && matchesClass;
-                });
-                
-                displayStudents(filtered);
-            });
-            
-            // Initialize sample data if needed
-            initializeSampleData();
-        });
-
-        async function initializeSampleData() {
-            await db.init();
-            
-            // Add sample students if none exist
-            if (appState.students.length === 0) {
-                const sampleStudents = [
-                    { nis: '2024001', name: 'Ahmad Fauzi', class: '7A' },
-                    { nis: '2024002', name: 'Siti Nurhaliza', class: '7A' },
-                    { nis: '2024003', name: 'Budi Santoso', class: '7B' },
-                    { nis: '2024004', name: 'Rina Kartika', class: '7B' },
-                    { nis: '2024005', name: 'Doni Pratama', class: '8A' }
-                ];
-                
-                for (const student of sampleStudents) {
-                    await db.addStudent(student);
-                }
+                return;
             }
             
-            // Add sample quiz if none exist
-            if (appState.quizzes.length === 0) {
-                const sampleQuiz = {
-                    subject: 'Matematika',
-                    class: '7A',
-                    material: 'Aljabar Linear',
-                    title: 'Quiz Aljabar Linear - Persamaan Dasar',
-                    questions: [
-                        {
-                            question: 'Berapa hasil dari 2x + 3 = 11?',
-                            options: ['x = 4', 'x = 5', 'x = 6', 'x = 7'],
-                            correct: 0,
-                            timeLimit: 30
-                        },
-                        {
-                            question: 'Jika 3y - 5 = 10, maka nilai y adalah?',
-                            options: ['y = 3', 'y = 4', 'y = 5', 'y = 6'],
-                            correct: 2,
-                            timeLimit: 30
-                        },
-                        {
-                            question: 'Hasil dari 4a + 2a adalah?',
-                            options: ['6a', '8a', '2a', '4a'],
-                            correct: 0,
-                            timeLimit: 25
-                        }
-                    ]
-                };
-                
-                await db.addQuiz(sampleQuiz);
-            }
-        }
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972f3afea0adce65',t:'MTc1NTgzMjc4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-</html>
+            const exportData = [
+                ['NIS', 'Nama', 'Kelas', 'Mata Pelajaran', 'Materi', 'Mode', 'Nilai', 'Tanggal'],
+                ...appState.grades.map(grade => {
+                    const student = appState.students.find(s => s.nis === grade.nis);
+                    const game = appState.games.find(g => g.gameCode === grade.gameCode);
+                    
+                    if (!student || !game) return null;
+                    
+                    const modeText = game.mode === 'live' ? 'Live' : game.mode === 'assignment' ? 'Tugas' : 'Ujian';
+                    
+                    return [
+                        student.nis,
+                        student.name,
+                        student.class,
+                        game.subject,
+                        game.material,
+                        modeText,
+                        grade.score,
+                        new Date(grade.completedAt).toLocaleDateString('id-ID')
+                    ];
+                }).filter(row => row !== null)
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Data Nilai');
+            
+            XLSX.writeFile(wb, `Data_Nilai_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Export Berhasil!',<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972f5669642040ce',t:'MTc1NTgzMzkwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
