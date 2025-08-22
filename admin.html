@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizMaster Pro - Admin Panel</title>
+    <title>QuizMaster Pro - Admin Panel v15 ✨</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script>
-        // Firebase configuration - SUDAH DIKONFIGURASI ✅
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBY_QE1TeFyh0-zejlbEuHS3E3K0TquI4Y",
             authDomain: "quizmaster-pro-ff3a2.firebaseapp.com",
@@ -102,6 +102,20 @@
             position: relative;
             height: 300px;
         }
+
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -111,7 +125,7 @@
         <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md slide-up">
             <div class="text-center mb-8">
                 <div class="text-4xl mb-4">👨‍💼</div>
-                <h2 class="text-3xl font-bold text-gray-800">Admin Panel</h2>
+                <h2 class="text-3xl font-bold text-gray-800">Admin Panel v15</h2>
                 <p class="text-gray-600 mt-2">QuizMaster Pro - Sistem Manajemen Quiz</p>
             </div>
             
@@ -144,7 +158,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center space-x-8">
-                        <h1 class="text-xl font-bold text-gray-900">🎯 QuizMaster Pro Admin</h1>
+                        <h1 class="text-xl font-bold text-gray-900">🎯 QuizMaster Pro Admin v15</h1>
                         <div class="hidden md:flex space-x-1">
                             <button onclick="showSection('dashboard')" class="nav-item px-4 py-2 text-sm font-medium rounded-lg active">Dashboard</button>
                             <button onclick="showSection('games')" class="nav-item px-4 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-lg">Games</button>
@@ -158,8 +172,16 @@
                         <div class="relative">
                             <button onclick="toggleNotifications()" class="text-gray-500 hover:text-gray-700 relative">
                                 🔔
-                                <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">3</span>
+                                <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
                             </button>
+                            <div id="notificationDropdown" class="notification-dropdown hidden">
+                                <div class="p-4 border-b">
+                                    <h3 class="font-semibold text-gray-900">Notifikasi</h3>
+                                </div>
+                                <div id="notificationList" class="p-2">
+                                    <!-- Notifications will be populated here -->
+                                </div>
+                            </div>
                         </div>
                         <span class="text-sm text-gray-600" id="adminInfo">Admin</span>
                         <button onclick="adminLogout()" class="text-gray-500 hover:text-gray-700">Keluar</button>
@@ -172,7 +194,7 @@
         <div id="dashboardSection" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="mb-8">
                 <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Admin</h2>
-                <p class="text-gray-600">Ringkasan aktivitas sistem QuizMaster Pro</p>
+                <p class="text-gray-600">Ringkasan aktivitas sistem QuizMaster Pro v15</p>
             </div>
             
             <!-- Stats Cards -->
@@ -306,9 +328,14 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Bank Soal</h2>
                     <p class="text-gray-600">Kelola koleksi soal quiz</p>
                 </div>
-                <button onclick="showCreateQuestionModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors">
-                    ➕ Tambah Soal
-                </button>
+                <div class="flex space-x-3">
+                    <button onclick="showImportQuestionsModal()" class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-colors">
+                        📥 Import Soal
+                    </button>
+                    <button onclick="showCreateQuestionModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors">
+                        ➕ Tambah Soal
+                    </button>
+                </div>
             </div>
             
             <!-- Question Filters -->
@@ -458,20 +485,14 @@
                 <div class="bg-white rounded-xl shadow-sm p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribusi Nilai</h3>
                     <div class="chart-container" id="gradeChart">
-                        <!-- Chart will be rendered here -->
-                        <div class="flex items-center justify-center h-full text-gray-500">
-                            📊 Chart akan ditampilkan di sini
-                        </div>
+                        <canvas id="gradeChartCanvas" width="400" height="300"></canvas>
                     </div>
                 </div>
                 
                 <div class="bg-white rounded-xl shadow-sm p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Aktivitas Harian</h3>
                     <div class="chart-container" id="activityChart">
-                        <!-- Chart will be rendered here -->
-                        <div class="flex items-center justify-center h-full text-gray-500">
-                            📈 Chart akan ditampilkan di sini
-                        </div>
+                        <canvas id="activityChartCanvas" width="400" height="300"></canvas>
                     </div>
                 </div>
             </div>
@@ -681,7 +702,7 @@
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Batas Peringatan</label>
-                                <input type="number" id="examWarningLimit" value="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <input type="number" id="examWarningLimitModal" value="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             </div>
                         </div>
                     </div>
@@ -793,6 +814,213 @@
         </div>
     </div>
 
+    <!-- Create Student Modal -->
+    <div id="createStudentModal" class="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-900">Tambah Siswa Baru</h3>
+                    <button onclick="hideCreateStudentModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">NIS</label>
+                    <input type="text" id="studentNIS" placeholder="Masukkan NIS siswa" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                    <input type="text" id="studentName" placeholder="Masukkan nama lengkap" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
+                    <select id="studentClass" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option value="7A">7A</option>
+                        <option value="7B">7B</option>
+                        <option value="8A">8A</option>
+                        <option value="8B">8B</option>
+                        <option value="9A">9A</option>
+                        <option value="9B">9B</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="studentEmail" placeholder="email@school.edu" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            
+            <div class="p-6 border-t bg-gray-50 flex justify-end space-x-4">
+                <button onclick="hideCreateStudentModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Batal
+                </button>
+                <button onclick="createStudent()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                    Simpan Siswa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Students Modal -->
+    <div id="importStudentsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-900">Import Data Siswa</h3>
+                    <button onclick="hideImportStudentsModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- File Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload File Excel/CSV</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input type="file" id="studentFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="previewStudentFile(event)">
+                        <div class="text-4xl mb-4">📁</div>
+                        <p class="text-gray-600 mb-4">Drag & drop file atau klik untuk memilih</p>
+                        <button onclick="document.getElementById('studentFileInput').click()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Pilih File
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Format Template -->
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-900 mb-2">📋 Format Template</h4>
+                    <p class="text-blue-800 text-sm mb-3">File harus memiliki kolom berikut (urutan bebas):</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div class="bg-white px-3 py-1 rounded border">NIS</div>
+                        <div class="bg-white px-3 py-1 rounded border">Nama</div>
+                        <div class="bg-white px-3 py-1 rounded border">Kelas</div>
+                        <div class="bg-white px-3 py-1 rounded border">Email</div>
+                    </div>
+                    <button onclick="downloadStudentTemplate()" class="mt-3 text-blue-600 hover:text-blue-800 text-sm underline">
+                        📥 Download Template Excel
+                    </button>
+                </div>
+                
+                <!-- Preview -->
+                <div id="importPreviewContainer" class="hidden">
+                    <h4 class="font-semibold text-gray-900 mb-3">Preview Data</h4>
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="max-h-60 overflow-y-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">NIS</th>
+                                        <th class="px-4 py-2 text-left">Nama</th>
+                                        <th class="px-4 py-2 text-left">Kelas</th>
+                                        <th class="px-4 py-2 text-left">Email</th>
+                                        <th class="px-4 py-2 text-left">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="importPreview">
+                                    <!-- Preview data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t bg-gray-50 flex justify-end space-x-4">
+                <button onclick="hideImportStudentsModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Batal
+                </button>
+                <button id="importStudentsBtn" onclick="importStudents()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    📥 Import Siswa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Questions Modal -->
+    <div id="importQuestionsModal" class="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-900">Import Bank Soal</h3>
+                    <button onclick="hideImportQuestionsModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- File Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload File Excel/CSV</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input type="file" id="questionFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="previewQuestionFile(event)">
+                        <div class="text-4xl mb-4">📝</div>
+                        <p class="text-gray-600 mb-4">Drag & drop file atau klik untuk memilih</p>
+                        <button onclick="document.getElementById('questionFileInput').click()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Pilih File
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Format Template -->
+                <div class="bg-green-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-900 mb-2">📋 Format Template</h4>
+                    <p class="text-green-800 text-sm mb-3">File harus memiliki kolom berikut (urutan bebas):</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm mb-3">
+                        <div class="bg-white px-3 py-1 rounded border">Pertanyaan</div>
+                        <div class="bg-white px-3 py-1 rounded border">Mata Pelajaran</div>
+                        <div class="bg-white px-3 py-1 rounded border">Tingkat</div>
+                        <div class="bg-white px-3 py-1 rounded border">Pilihan A</div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div class="bg-white px-3 py-1 rounded border">Pilihan B</div>
+                        <div class="bg-white px-3 py-1 rounded border">Pilihan C</div>
+                        <div class="bg-white px-3 py-1 rounded border">Pilihan D</div>
+                        <div class="bg-white px-3 py-1 rounded border">Jawaban Benar</div>
+                    </div>
+                    <p class="text-green-700 text-xs mt-2">
+                        * Tingkat: easy/medium/hard | Jawaban Benar: A/B/C/D
+                    </p>
+                    <button onclick="downloadQuestionTemplate()" class="mt-3 text-green-600 hover:text-green-800 text-sm underline">
+                        📥 Download Template Excel
+                    </button>
+                </div>
+                
+                <!-- Preview -->
+                <div id="questionImportPreviewContainer" class="hidden">
+                    <h4 class="font-semibold text-gray-900 mb-3">Preview Data</h4>
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="max-h-60 overflow-y-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Pertanyaan</th>
+                                        <th class="px-4 py-2 text-left">Mata Pelajaran</th>
+                                        <th class="px-4 py-2 text-left">Tingkat</th>
+                                        <th class="px-4 py-2 text-left">Jawaban</th>
+                                        <th class="px-4 py-2 text-left">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questionImportPreview">
+                                    <!-- Preview data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t bg-gray-50 flex justify-end space-x-4">
+                <button onclick="hideImportQuestionsModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Batal
+                </button>
+                <button id="importQuestionsBtn" onclick="importQuestions()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    📥 Import Soal
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Control Modal -->
     <div id="gameControlModal" class="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -854,7 +1082,12 @@
             questions: [],
             students: [],
             currentGame: null,
-            gameListeners: {}
+            gameListeners: {},
+            notifications: [
+                { id: 1, type: 'info', message: 'Game ABC123 telah dimulai', time: '5 menit lalu', read: false },
+                { id: 2, type: 'success', message: '15 siswa bergabung ke game XYZ789', time: '10 menit lalu', read: false },
+                { id: 3, type: 'warning', message: 'Soal Matematika perlu direview', time: '1 jam lalu', read: false }
+            ]
         };
 
         // Sample admin credentials
@@ -1036,6 +1269,29 @@
                 }
             },
             
+            async updateQuestion(questionId, questionData) {
+                try {
+                    await database.ref(`questions/${questionId}`).update({
+                        ...questionData,
+                        updatedAt: new Date().toISOString()
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Error updating question:', error);
+                    return true; // Allow offline mode
+                }
+            },
+            
+            async deleteQuestion(questionId) {
+                try {
+                    await database.ref(`questions/${questionId}`).remove();
+                    return true;
+                } catch (error) {
+                    console.error('Error deleting question:', error);
+                    return true; // Allow offline mode
+                }
+            },
+            
             async getStudents() {
                 try {
                     const snapshot = await database.ref('students').once('value');
@@ -1087,6 +1343,29 @@
                 }
             },
             
+            async updateStudent(nis, studentData) {
+                try {
+                    await database.ref(`students/${nis}`).update({
+                        ...studentData,
+                        updatedAt: new Date().toISOString()
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Error updating student:', error);
+                    return true; // Allow offline mode
+                }
+            },
+            
+            async deleteStudent(nis) {
+                try {
+                    await database.ref(`students/${nis}`).remove();
+                    return true;
+                } catch (error) {
+                    console.error('Error deleting student:', error);
+                    return true; // Allow offline mode
+                }
+            },
+            
             async getGamePlayers(gameCode) {
                 try {
                     const snapshot = await database.ref(`games/${gameCode}/players`).once('value');
@@ -1121,6 +1400,24 @@
             }
         };
 
+        // Utility functions
+        function generateGameCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
         // Authentication
         async function adminLogin() {
             const username = document.getElementById('adminUsername').value.trim();
@@ -1143,7 +1440,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: `Selamat Datang, ${username}!`,
-                    text: 'Login berhasil.',
+                    text: 'Login berhasil ke QuizMaster Pro v15.',
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -1231,6 +1528,69 @@
             }
         }
 
+        // Notifications
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('hidden');
+            
+            if (!dropdown.classList.contains('hidden')) {
+                loadNotifications();
+            }
+        }
+
+        function loadNotifications() {
+            const container = document.getElementById('notificationList');
+            container.innerHTML = '';
+            
+            if (adminState.notifications.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Tidak ada notifikasi</div>';
+                return;
+            }
+            
+            adminState.notifications.forEach(notification => {
+                const notifDiv = document.createElement('div');
+                notifDiv.className = `p-3 hover:bg-gray-50 cursor-pointer border-b ${!notification.read ? 'bg-blue-50' : ''}`;
+                notifDiv.onclick = () => markNotificationRead(notification.id);
+                
+                const typeIcon = notification.type === 'info' ? 'ℹ️' : 
+                               notification.type === 'success' ? '✅' : 
+                               notification.type === 'warning' ? '⚠️' : '🔔';
+                
+                notifDiv.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <span class="text-lg">${typeIcon}</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">${notification.message}</p>
+                            <p class="text-xs text-gray-500 mt-1">${notification.time}</p>
+                        </div>
+                        ${!notification.read ? '<div class="w-2 h-2 bg-blue-500 rounded-full"></div>' : ''}
+                    </div>
+                `;
+                container.appendChild(notifDiv);
+            });
+        }
+
+        function markNotificationRead(notificationId) {
+            const notification = adminState.notifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.read = true;
+                updateNotificationBadge();
+                loadNotifications();
+            }
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            const unreadCount = adminState.notifications.filter(n => !n.read).length;
+            
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
         // Dashboard functions
         async function loadDashboardData() {
             try {
@@ -1257,6 +1617,9 @@
                 // Load recent activities
                 loadRecentActivities();
                 
+                // Update notification badge
+                updateNotificationBadge();
+                
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
@@ -1268,7 +1631,7 @@
             
             // Sample recent activities
             const activities = [
-                { type: 'game_created', text: 'Game "Quiz Matematika" dibuat', time: '2 menit lalu' },
+                { type: 'game_created', text: 'Game "Quiz Matematika v15" dibuat', time: '2 menit lalu' },
                 { type: 'student_joined', text: '5 siswa bergabung ke game ABC123', time: '5 menit lalu' },
                 { type: 'question_added', text: 'Soal IPA baru ditambahkan', time: '10 menit lalu' },
                 { type: 'game_completed', text: 'Game XYZ789 selesai dengan 15 peserta', time: '15 menit lalu' }
@@ -1412,6 +1775,14 @@
         function hideCreateGameModal() {
             document.getElementById('createGameModal').classList.add('hidden');
             clearGameForm();
+            
+            // Reset modal title and button for create mode
+            document.querySelector('#createGameModal h3').textContent = 'Buat Game Baru';
+            const createBtn = document.querySelector('#createGameModal button[onclick*="Game"]');
+            if (createBtn) {
+                createBtn.textContent = 'Buat Game';
+                createBtn.setAttribute('onclick', 'createGame()');
+            }
         }
 
         function toggleGameModeSettings() {
@@ -1529,7 +1900,7 @@
             } else if (mode === 'exam') {
                 gameData.settings.fullscreen = document.getElementById('examFullscreen').checked;
                 gameData.settings.blockTabs = document.getElementById('examBlockTabs').checked;
-                gameData.settings.warningLimit = parseInt(document.getElementById('examWarningLimit').value);
+                gameData.settings.warningLimit = parseInt(document.getElementById('examWarningLimitModal').value);
             }
             
             try {
@@ -1587,108 +1958,145 @@
             toggleGameModeSettings();
         }
 
-        // Game Control
+        // Game Control Functions
         async function controlGame(gameCode) {
             const game = adminState.games.find(g => g.gameCode === gameCode);
             if (!game) return;
             
             adminState.currentGame = game;
             
-            document.getElementById('controlGameTitle').textContent = game.quiz?.title || 'Game';
+            // Update modal content
+            document.getElementById('controlGameTitle').textContent = game.quiz?.title || 'Game Control';
             document.getElementById('controlGameCode').textContent = gameCode;
+            
+            // Show modal
             document.getElementById('gameControlModal').classList.remove('hidden');
             
-            // Load players and setup real-time updates
+            // Load players and setup listeners
             await loadGamePlayers(gameCode);
-            setupGameRealTimeUpdates(gameCode);
+            setupGameListeners(gameCode);
         }
 
         function hideGameControlModal() {
             document.getElementById('gameControlModal').classList.add('hidden');
             
             // Clean up listeners
-            if (adminState.gameListeners.players) {
-                adminState.gameListeners.players.off();
+            if (adminState.currentGame && adminState.gameListeners[adminState.currentGame.gameCode]) {
+                adminState.gameListeners[adminState.currentGame.gameCode].off();
+                delete adminState.gameListeners[adminState.currentGame.gameCode];
             }
-            if (adminState.gameListeners.results) {
-                adminState.gameListeners.results.off();
-            }
+            
+            adminState.currentGame = null;
         }
 
         async function loadGamePlayers(gameCode) {
-            const players = await db.getGamePlayers(gameCode);
-            const container = document.getElementById('gamePlayersList');
-            const countElement = document.getElementById('playerCount');
-            
-            container.innerHTML = '';
-            countElement.textContent = players.length;
-            
-            if (players.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm">Belum ada pemain yang bergabung</p>';
-                return;
-            }
-            
-            players.forEach(player => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'player-item flex items-center justify-between p-2 bg-gray-50 rounded-lg';
-                playerDiv.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <div class="text-lg">👤</div>
-                        <div>
-                            <div class="font-medium text-sm">${player.name}</div>
-                            <div class="text-xs text-gray-500">${player.class} • ${player.nis}</div>
+            try {
+                const players = await db.getGamePlayers(gameCode);
+                const container = document.getElementById('gamePlayersList');
+                const countElement = document.getElementById('playerCount');
+                
+                container.innerHTML = '';
+                countElement.textContent = players.length;
+                
+                if (players.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-4">Belum ada pemain bergabung</div>';
+                    return;
+                }
+                
+                players.forEach((player, index) => {
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg player-item';
+                    playerDiv.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                ${index + 1}
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">${player.name}</div>
+                                <div class="text-xs text-gray-500">${player.nis}</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        ${new Date(player.joinedAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}
-                    </div>
-                `;
-                container.appendChild(playerDiv);
-            });
+                        <div class="text-xs text-gray-500">
+                            ${new Date(player.joinedAt).toLocaleTimeString('id-ID')}
+                        </div>
+                    `;
+                    container.appendChild(playerDiv);
+                });
+                
+            } catch (error) {
+                console.error('Error loading game players:', error);
+            }
         }
 
-        function setupGameRealTimeUpdates(gameCode) {
-            // Listen for new players
-            adminState.gameListeners.players = database.ref(`games/${gameCode}/players`).on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    const players = snapshot.val();
-                    loadGamePlayers(gameCode);
-                }
-            });
-            
-            // Listen for results
-            adminState.gameListeners.results = database.ref(`grades/${gameCode}`).on('value', (snapshot) => {
-                if (snapshot.exists()) {
-                    loadLiveLeaderboard(gameCode);
-                }
-            });
+        function setupGameListeners(gameCode) {
+            try {
+                // Listen for new players joining
+                const playersRef = database.ref(`games/${gameCode}/players`);
+                playersRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        const players = Object.values(snapshot.val());
+                        loadGamePlayers(gameCode);
+                    }
+                });
+                
+                // Listen for game results
+                const resultsRef = database.ref(`grades/${gameCode}`);
+                resultsRef.on('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        updateLiveLeaderboard(gameCode, snapshot.val());
+                    }
+                });
+                
+                // Store listeners for cleanup
+                adminState.gameListeners[gameCode] = {
+                    off: () => {
+                        playersRef.off();
+                        resultsRef.off();
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Error setting up game listeners:', error);
+            }
         }
 
-        async function loadLiveLeaderboard(gameCode) {
-            const results = await db.getGameResults(gameCode);
+        function updateLiveLeaderboard(gameCode, gradesData) {
             const container = document.getElementById('liveLeaderboard');
-            
             container.innerHTML = '';
+            
+            const results = [];
+            Object.keys(gradesData).forEach(nis => {
+                results.push({
+                    nis: nis,
+                    ...gradesData[nis]
+                });
+            });
+            
+            results.sort((a, b) => b.score - a.score);
             
             if (results.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-sm">Belum ada hasil</p>';
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">Belum ada hasil</div>';
                 return;
             }
             
             results.slice(0, 10).forEach((result, index) => {
-                const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                const student = adminState.students.find(s => s.nis === result.nis);
+                const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
                 
                 const resultDiv = document.createElement('div');
-                resultDiv.className = 'flex items-center justify-between p-2 bg-gray-50 rounded-lg';
+                resultDiv.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
                 resultDiv.innerHTML = `
                     <div class="flex items-center space-x-3">
-                        <div class="text-sm font-bold w-8">${rankEmoji}</div>
+                        <div class="text-lg">${rankEmoji}</div>
                         <div>
-                            <div class="font-medium text-sm">NIS: ${result.nis}</div>
-                            <div class="text-xs text-gray-500">${new Date(result.completedAt).toLocaleTimeString('id-ID')}</div>
+                            <div class="font-medium text-sm">${student?.name || 'Unknown'}</div>
+                            <div class="text-xs text-gray-500">${result.nis}</div>
                         </div>
                     </div>
-                    <div class="text-lg font-bold text-blue-600">${result.score}</div>
+                    <div class="text-right">
+                        <div class="font-bold text-blue-600">${result.score}</div>
+                        <div class="text-xs text-gray-500">${Math.round(result.percentage)}%</div>
+                    </div>
                 `;
                 container.appendChild(resultDiv);
             });
@@ -1697,20 +2105,12 @@
         async function startLiveGame() {
             if (!adminState.currentGame) return;
             
-            const result = await Swal.fire({
-                title: 'Mulai Game Live?',
-                text: 'Game akan dimulai dan siswa dapat mengerjakan quiz.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Mulai',
-                cancelButtonText: 'Batal'
-            });
+            const gameCode = adminState.currentGame.gameCode;
             
-            if (result.isConfirmed) {
-                await db.updateGameStatus(adminState.currentGame.gameCode, 'active');
+            try {
+                await db.updateGameStatus(gameCode, 'active');
                 
+                // Update UI
                 document.getElementById('gameStatus').textContent = 'Game Aktif';
                 document.getElementById('startGameBtn').classList.add('hidden');
                 document.getElementById('endGameBtn').classList.remove('hidden');
@@ -1722,6 +2122,17 @@
                     timer: 2000,
                     showConfirmButton: false
                 });
+                
+                // Refresh games list
+                loadGames();
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memulai Game!',
+                    text: 'Terjadi kesalahan saat memulai game.',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         }
 
@@ -1730,7 +2141,7 @@
             
             const result = await Swal.fire({
                 title: 'Akhiri Game?',
-                text: 'Game akan berakhir dan hasil akan ditampilkan.',
+                text: 'Game akan dihentikan dan siswa tidak dapat lagi mengerjakan quiz.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
@@ -1740,453 +2151,595 @@
             });
             
             if (result.isConfirmed) {
-                await db.updateGameStatus(adminState.currentGame.gameCode, 'completed');
+                const gameCode = adminState.currentGame.gameCode;
                 
-                document.getElementById('gameStatus').textContent = 'Game Selesai';
-                document.getElementById('startGameBtn').classList.add('hidden');
-                document.getElementById('endGameBtn').classList.add('hidden');
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Game Berakhir!',
-                    text: 'Hasil quiz telah tersimpan.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                try {
+                    await db.updateGameStatus(gameCode, 'completed');
+                    
+                    // Update UI
+                    document.getElementById('gameStatus').textContent = 'Game Selesai';
+                    document.getElementById('startGameBtn').classList.remove('hidden');
+                    document.getElementById('endGameBtn').classList.add('hidden');
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Game Diakhiri!',
+                        text: 'Game telah selesai.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Refresh games list
+                    loadGames();
+                    
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Mengakhiri Game!',
+                        text: 'Terjadi kesalahan saat mengakhiri game.',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
             }
         }
 
-        // Questions Management
-        async function loadQuestions() {
-            const questions = await db.getQuestions();
-            adminState.questions = questions;
-            displayQuestions(questions);
-        }
-
-        function displayQuestions(questions) {
-            const tbody = document.getElementById('questionsTableBody');
-            tbody.innerHTML = '';
+        // Game Results & Management
+        async function viewGameResults(gameCode) {
+            const game = adminState.games.find(g => g.gameCode === gameCode);
+            if (!game) return;
             
-            if (questions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada soal tersedia</td></tr>';
-                return;
-            }
+            const results = await db.getGameResults(gameCode);
+            const players = await db.getGamePlayers(gameCode);
             
-            questions.forEach(question => {
-                const difficultyText = question.difficulty === 'easy' ? 'Mudah' : 
-                                     question.difficulty === 'medium' ? 'Sedang' : 'Sulit';
-                const difficultyClass = question.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-                                      question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-red-100 text-red-800';
-                
-                const row = document.createElement('tr');
-                row.className = 'question-item hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900 max-w-md truncate">${question.question}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${question.subject}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 rounded-full text-xs ${difficultyClass}">${difficultyText}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(question.createdAt).toLocaleDateString('id-ID')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                        <button onclick="editQuestion('${question.id}')" class="text-blue-600 hover:text-blue-900">✏️ Edit</button>
-                        <button onclick="deleteQuestion('${question.id}')" class="text-red-600 hover:text-red-900">🗑️ Hapus</button>
-                    </td>
+            let resultsHtml = '<div class="max-h-96 overflow-y-auto">';
+            
+            if (results.length === 0) {
+                resultsHtml += '<p class="text-center text-gray-500 py-8">Belum ada hasil tersedia</p>';
+            } else {
+                resultsHtml += `
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-semibold text-blue-900">📊 Statistik Game</h4>
+                        <div class="grid grid-cols-2 gap-4 mt-2 text-sm">
+                            <div>👥 Total Peserta: ${players.length}</div>
+                            <div>✅ Selesai: ${results.length}</div>
+                            <div>📈 Rata-rata: ${Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length)}</div>
+                            <div>🏆 Tertinggi: ${Math.max(...results.map(r => r.score))}</div>
+                        </div>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Rank</th>
+                                <th class="px-4 py-2 text-left">NIS</th>
+                                <th class="px-4 py-2 text-left">Nama</th>
+                                <th class="px-4 py-2 text-left">Skor</th>
+                                <th class="px-4 py-2 text-left">Waktu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function filterQuestions() {
-            const subject = document.getElementById('questionFilterSubject').value;
-            const difficulty = document.getElementById('questionFilterDifficulty').value;
-            const search = document.getElementById('questionSearchInput').value.toLowerCase();
-            
-            let filteredQuestions = adminState.questions;
-            
-            if (subject) {
-                filteredQuestions = filteredQuestions.filter(q => q.subject === subject);
-            }
-            
-            if (difficulty) {
-                filteredQuestions = filteredQuestions.filter(q => q.difficulty === difficulty);
-            }
-            
-            if (search) {
-                filteredQuestions = filteredQuestions.filter(q => 
-                    q.question.toLowerCase().includes(search) ||
-                    q.subject.toLowerCase().includes(search)
-                );
-            }
-            
-            displayQuestions(filteredQuestions);
-        }
-
-        // Question Creation
-        function showCreateQuestionModal() {
-            document.getElementById('createQuestionModal').classList.remove('hidden');
-        }
-
-        function hideCreateQuestionModal() {
-            document.getElementById('createQuestionModal').classList.add('hidden');
-            clearQuestionForm();
-        }
-
-        async function createQuestion() {
-            const subject = document.getElementById('questionSubject').value;
-            const difficulty = document.getElementById('questionDifficulty').value;
-            const questionText = document.getElementById('questionText').value.trim();
-            const explanation = document.getElementById('questionExplanation').value.trim();
-            
-            const options = [
-                document.getElementById('option0').value.trim(),
-                document.getElementById('option1').value.trim(),
-                document.getElementById('option2').value.trim(),
-                document.getElementById('option3').value.trim()
-            ];
-            
-            const correctAnswer = document.querySelector('input[name="correctAnswer"]:checked');
-            
-            if (!questionText || options.some(opt => !opt) || !correctAnswer) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Data Tidak Lengkap!',
-                    text: 'Mohon lengkapi semua field dan pilih jawaban yang benar.',
-                    confirmButtonColor: '#f59e0b'
-                });
-                return;
-            }
-            
-            const questionData = {
-                subject: subject,
-                difficulty: difficulty,
-                question: questionText,
-                options: options,
-                correct: parseInt(correctAnswer.value),
-                explanation: explanation
-            };
-            
-            try {
-                Swal.fire({
-                    title: 'Menyimpan Soal...',
-                    text: 'Mohon tunggu sebentar.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                
+                results.forEach((result, index) => {
+                    const student = adminState.students.find(s => s.nis === result.nis);
+                    const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}`;
+                    
+                    resultsHtml += `
+                        <tr class="border-b">
+                            <td class="px-4 py-2 font-bold">${rankEmoji}</td>
+                            <td class="px-4 py-2">${result.nis}</td>
+                            <td class="px-4 py-2">${student?.name || 'Unknown'}</td>
+                            <td class="px-4 py-2 font-semibold text-blue-600">${result.score}</td>
+                            <td class="px-4 py-2">${new Date(result.completedAt).toLocaleString('id-ID')}</td>
+                        </tr>
+                    `;
                 });
                 
-                await db.createQuestion(questionData);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Soal Berhasil Disimpan!',
-                    text: 'Soal baru telah ditambahkan ke bank soal.',
-                    confirmButtonColor: '#10b981'
-                });
-                
-                hideCreateQuestionModal();
-                loadQuestions();
-                
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal Menyimpan Soal!',
-                    text: 'Terjadi kesalahan saat menyimpan soal.',
-                    confirmButtonColor: '#ef4444'
-                });
-            }
-        }
-
-        function clearQuestionForm() {
-            document.getElementById('questionSubject').value = 'Matematika';
-            document.getElementById('questionDifficulty').value = 'easy';
-            document.getElementById('questionText').value = '';
-            document.getElementById('questionExplanation').value = '';
-            
-            for (let i = 0; i < 4; i++) {
-                document.getElementById(`option${i}`).value = '';
-                document.getElementById(`correct${i}`).checked = false;
-            }
-        }
-
-        // Students Management
-        async function loadStudents() {
-            const students = await db.getStudents();
-            adminState.students = students;
-            displayStudents(students);
-        }
-
-        function displayStudents(students) {
-            const tbody = document.getElementById('studentsTableBody');
-            tbody.innerHTML = '';
-            
-            if (students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Belum ada data siswa</td></tr>';
-                return;
+                resultsHtml += '</tbody></table>';
             }
             
-            students.forEach(student => {
-                const statusClass = student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-                const statusText = student.status === 'active' ? 'Aktif' : 'Nonaktif';
-                
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.nis}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.class}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.email}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 rounded-full text-xs ${statusClass}">${statusText}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                        <button onclick="editStudent('${student.nis}')" class="text-blue-600 hover:text-blue-900">✏️ Edit</button>
-                        <button onclick="deleteStudent('${student.nis}')" class="text-red-600 hover:text-red-900">🗑️ Hapus</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function filterStudents() {
-            const classFilter = document.getElementById('studentFilterClass').value;
-            const search = document.getElementById('studentSearchInput').value.toLowerCase();
+            resultsHtml += '</div>';
             
-            let filteredStudents = adminState.students;
-            
-            if (classFilter) {
-                filteredStudents = filteredStudents.filter(s => s.class === classFilter);
-            }
-            
-            if (search) {
-                filteredStudents = filteredStudents.filter(s => 
-                    s.name.toLowerCase().includes(search) ||
-                    s.nis.toLowerCase().includes(search) ||
-                    s.email.toLowerCase().includes(search)
-                );
-            }
-            
-            displayStudents(filteredStudents);
-        }
-
-        // Utility functions
-        function generateGameCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let result = '';
-            for (let i = 0; i < 6; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
-        }
-
-        function toggleNotifications() {
-            // Toggle notification dropdown (placeholder)
-            console.log('Toggle notifications');
-        }
-
-        // Placeholder functions for features to be implemented
-        function viewGameResults(gameCode) {
             Swal.fire({
-                icon: 'info',
-                title: 'Fitur Dalam Pengembangan',
-                text: `Melihat hasil game ${gameCode}`,
-                confirmButtonColor: '#3b82f6'
-            });
-        }
-
-        function editGame(gameCode) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Fitur Dalam Pengembangan',
-                text: `Edit game ${gameCode}`,
-                confirmButtonColor: '#3b82f6'
-            });
-        }
-
-        function deleteGame(gameCode) {
-            Swal.fire({
-                title: 'Hapus Game?',
-                text: `Yakin ingin menghapus game ${gameCode}?`,
-                icon: 'warning',
+                title: `📊 Hasil: ${game.quiz?.title || 'Game'}`,
+                html: resultsHtml,
+                width: '800px',
+                confirmButtonText: '📥 Export Excel',
                 showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal'
+                cancelButtonText: 'Tutup',
+                confirmButtonColor: '#10b981'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Game Dihapus!',
-                        text: 'Game berhasil dihapus.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+                    exportGameResults(gameCode, results);
                 }
             });
         }
 
-        function editQuestion(questionId) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Fitur Dalam Pengembangan',
-                text: `Edit soal ${questionId}`,
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+        function exportGame<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9730c20c12f29cad',t:'MTc1NTg0ODgwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>
+/*
+  QuizMaster Pro – Inject Layer (Full Feature)
+  -------------------------------------------------
+  Drop-in script to "inject" missing features into your existing Admin Panel
+  without rewriting your HTML. Works with Firebase (if already initialized) or
+  falls back to localStorage. Zero external deps required; optional libs loaded
+  on demand (Chart.js, SheetJS) when needed.
 
-        function deleteQuestion(questionId) {
-            Swal.fire({
-                title: 'Hapus Soal?',
-                text: 'Yakin ingin menghapus soal ini?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Soal Dihapus!',
-                        text: 'Soal berhasil dihapus.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            });
-        }
+  How it works
+  - Looks for common element IDs used by your UI (gamesList, questionsTableBody,
+    studentsTableBody, etc.). If not found, degrades gracefully.
+  - Exposes global API used by buttons in your HTML (createGame, createQuestion,
+    createStudent, exportData, importData, backupDatabase, showSection, ...).
+  - If your HTML already defines some of these functions, the inject layer will
+    NOT overwrite them unless they are missing.
+*/
 
-        function showCreateStudentModal() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Fitur Dalam Pengembangan',
-                text: 'Tambah siswa baru',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+(function () {
+  const G = { // Global state
+    db: null, // Firebase RTDB reference if available
+    games: [],
+    questions: [],
+    students: [],
+    charts: { grade: null, activity: null },
+    loaders: { chart: false, xlsx: false },
+  };
 
-        function showImportStudentsModal() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Fitur Dalam Pengembangan',
-                text: 'Import data siswa dari Excel/CSV',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  // ---- Helpers ----
+  const $ = (id) => document.getElementById(id);
+  const hasEl = (id) => !!$(id);
+  const byQS = (sel) => document.querySelector(sel);
+  const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+  function uid(prefix = '') { return (prefix || 'id') + Math.random().toString(36).slice(2, 9); }
+  function gameCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r = ''; for (let i = 0; i < 6; i++) r += c[Math.floor(Math.random() * c.length)]; return r; }
 
-        function editStudent(nis) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Fitur Dalam Pengembangan',
-                text: `Edit siswa ${nis}`,
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  // ---- Storage adapter (Firebase if present, else localStorage) ----
+  function detectFirebase() {
+    try {
+      if (window.firebase && firebase.apps && firebase.apps.length > 0) {
+        return firebase.database();
+      }
+    } catch (e) { /* noop */ }
+    return null;
+  }
+  G.db = detectFirebase();
 
-        function deleteStudent(nis) {
-            Swal.fire({
-                title: 'Hapus Siswa?',
-                text: `Yakin ingin menghapus siswa ${nis}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Ya, Hapus',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Siswa Dihapus!',
-                        text: 'Data siswa berhasil dihapus.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            });
-        }
+  const store = {
+    async read(path, fallback) {
+      if (G.db) {
+        const snap = await G.db.ref(path).once('value');
+        return snap.exists() ? snap.val() : fallback;
+      }
+      try { return JSON.parse(localStorage.getItem(path)) ?? fallback; } catch { return fallback; }
+    },
+    async write(path, value) {
+      if (G.db) { await G.db.ref(path).set(value); return; }
+      localStorage.setItem(path, JSON.stringify(value));
+    },
+    async update(path, patch) {
+      if (G.db) { await G.db.ref(path).update(patch); return; }
+      const cur = await store.read(path, {}); await store.write(path, { ...cur, ...patch });
+    },
+    async remove(path) {
+      if (G.db) { await G.db.ref(path).remove(); return; }
+      localStorage.removeItem(path);
+    },
+  };
 
-        function loadReports() {
-            console.log('Loading reports...');
-        }
+  // ---- Sample fallback (only used when storage empty) ----
+  const SAMPLE = {
+    questions: [
+      { id: 'q1', subject: 'Matematika', difficulty: 'easy', question: '15 + 27 = ...', options: ['40', '42', '43', '45'], correct: 1, explanation: '15+27=42', createdAt: '2024-01-15' },
+      { id: 'q2', subject: 'IPA', difficulty: 'easy', question: 'Planet terdekat dari Matahari?', options: ['Venus', 'Merkurius', 'Bumi', 'Mars'], correct: 1, explanation: 'Merkurius', createdAt: '2024-01-16' },
+    ],
+    students: [
+      { nis: '2024001', name: 'Ahmad Fauzi', class: '7A', email: 'ahmad@school.edu', status: 'active' },
+      { nis: '2024002', name: 'Siti Nur', class: '7A', email: 'siti@school.edu', status: 'active' },
+    ],
+    games: [],
+  };
 
-        function generateGradeReport() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Generating Report...',
-                text: 'Laporan nilai sedang dibuat',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  // ---- Bootstrapping ----
+  async function loadAll() {
+    G.questions = (await store.read('questions', null)) || SAMPLE.questions;
+    G.students = (await store.read('students', null)) || SAMPLE.students;
+    const games = await store.read('games', null);
+    G.games = games ? Object.keys(games).map(k => ({ gameCode: k, ...games[k] })) : SAMPLE.games;
+  }
 
-        function generateActivityReport() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Generating Report...',
-                text: 'Laporan aktivitas sedang dibuat',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  async function persistAll() {
+    await store.write('questions', G.questions);
+    await store.write('students', G.students);
+    const gamesObj = {}; G.games.forEach(g => { const code = g.gameCode || gameCode(); gamesObj[code] = { ...g, gameCode: code }; });
+    await store.write('games', gamesObj);
+  }
 
-        function generateQuestionReport() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Generating Report...',
-                text: 'Laporan soal sedang dibuat',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  // ---- Dynamic loader ----
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      if ([...document.scripts].some(s => s.src.includes(src))) return resolve();
+      const s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+    });
+  }
 
-        function loadSettings() {
-            console.log('Loading settings...');
-        }
+  async function ensureChart() {
+    if (window.Chart) return;
+    if (!G.loaders.chart) { G.loaders.chart = true; await loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'); }
+  }
+  async function ensureXLSX() {
+    if (window.XLSX) return;
+    if (!G.loaders.xlsx) { G.loaders.xlsx = true; await loadScriptOnce('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); }
+  }
 
-        function saveSettings() {
-            Swal.fire({
-                icon: 'success',
-                title: 'Pengaturan Disimpan!',
-                text: 'Semua pengaturan berhasil disimpan.',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
+  // ---- Rendering (Dashboard) ----
+  function renderDashboard() {
+    if (hasEl('totalGames')) $('totalGames').textContent = G.games.length;
+    if (hasEl('totalStudents')) $('totalStudents').textContent = G.students.length;
+    if (hasEl('totalQuestions')) $('totalQuestions').textContent = G.questions.length;
+    if (hasEl('activeGames')) $('activeGames').textContent = G.games.filter(g => g.status === 'active').length;
+    if (hasEl('recentActivities')) {
+      const wrap = $('recentActivities'); wrap.innerHTML = '';
+      const recent = [
+        { t: 'Sistem siap digunakan', d: new Date() },
+        { t: 'Memuat data awal', d: new Date() },
+      ];
+      recent.forEach(r => wrap.insertAdjacentHTML('beforeend',
+        `<div class="flex items-center justify-between p-3 bg-gray-50 rounded"><span class="text-sm">${r.t}</span><span class="text-xs text-gray-500">${r.d.toLocaleTimeString('id-ID')}</span></div>`
+      ));
+    }
+  }
 
-        function exportData() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Export Data',
-                text: 'Fitur export data dalam pengembangan',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  // ---- Rendering (Games) ----
+  function renderGames(list = G.games) {
+    if (!hasEl('gamesList')) return;
+    const wrap = $('gamesList'); wrap.innerHTML = '';
+    if (!list.length) { wrap.innerHTML = '<div class="col-span-full text-center text-gray-500">Belum ada game.</div>'; return; }
+    list.forEach(g => {
+      const status = g.status || 'draft';
+      const statusClass = status === 'active' ? 'bg-green-100 text-green-700' : status === 'completed' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-700';
+      wrap.insertAdjacentHTML('beforeend', `
+        <div class="bg-white p-5 rounded-xl shadow-sm flex flex-col">
+          <div class="flex items-start justify-between">
+            <div>
+              <h4 class="text-lg font-semibold text-gray-900">${g.title || '-'}</h4>
+              <div class="text-sm text-gray-600">${g.subject || '-'} • ${g.class || 'All'} • ${g.mode || 'live'}</div>
+            </div>
+            <span class="text-xs px-2 py-1 rounded ${statusClass}">${status}</span>
+          </div>
+          <div class="mt-3 text-sm text-gray-600">Kode: <span class="font-mono font-semibold">${g.gameCode}</span></div>
+          <div class="mt-4 flex items-center gap-2">
+            <button class="px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg" onclick="openControl('${g.gameCode}')">Kontrol</button>
+            <button class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg" onclick="navigator.clipboard && navigator.clipboard.writeText('${g.gameCode}')">Copy Kode</button>
+          </div>
+        </div>`);
+    });
+  }
 
-        function importData() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Import Data',
-                text: 'Fitur import data dalam pengembangan',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  function filterGames() {
+    const mode = $('gameFilterMode')?.value || '';
+    const status = $('gameFilterStatus')?.value || '';
+    const q = ($('gameSearchInput')?.value || '').toLowerCase();
+    const f = G.games.filter(g => (!mode || g.mode === mode) && (!status || g.status === status) && (!q || (g.title || '').toLowerCase().includes(q)));
+    renderGames(f);
+  }
 
-        function backupDatabase() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Backup Database',
-                text: 'Fitur backup database dalam pengembangan',
-                confirmButtonColor: '#3b82f6'
-            });
-        }
+  // ---- Rendering (Questions) ----
+  function renderQuestions(list = G.questions) {
+    if (!hasEl('questionsTableBody')) return;
+    const tb = $('questionsTableBody'); tb.innerHTML = '';
+    if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada soal.</td></tr>'; return; }
+    list.forEach(q => tb.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td class="px-6 py-4 text-sm">${q.question}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${q.subject}</td>
+        <td class="px-6 py-4 text-sm"><span class="px-2 py-1 rounded text-xs ${q.difficulty === 'easy' ? 'bg-green-100 text-green-700' : q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${q.difficulty}</span></td>
+        <td class="px-6 py-4 text-sm text-gray-600">${q.createdAt ? formatDate(q.createdAt) : '-'}</td>
+        <td class="px-6 py-4 text-sm"><button class="px-3 py-1 bg-red-50 text-red-700 rounded" onclick="deleteQuestion('${q.id}')">Hapus</button></td>
+      </tr>`));
+  }
 
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
-            db.init();
-        });
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972f7ae044c8978e',t:'MTc1NTgzNTQwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  function filterQuestions() {
+    const s = $('questionFilterSubject')?.value || '';
+    const d = $('questionFilterDifficulty')?.value || '';
+    const q = ($('questionSearchInput')?.value || '').toLowerCase();
+    const f = G.questions.filter(x => (!s || x.subject === s) && (!d || x.difficulty === d) && (!q || (x.question || '').toLowerCase().includes(q)));
+    renderQuestions(f);
+  }
+
+  // ---- Rendering (Students) ----
+  function renderStudents(list = G.students) {
+    if (!hasEl('studentsTableBody')) return;
+    const tb = $('studentsTableBody'); tb.innerHTML = '';
+    if (!list.length) { tb.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Belum ada siswa.</td></tr>'; return; }
+    list.forEach(s => tb.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td class="px-6 py-4 text-sm">${s.nis}</td>
+        <td class="px-6 py-4 text-sm">${s.name}</td>
+        <td class="px-6 py-4 text-sm">${s.class}</td>
+        <td class="px-6 py-4 text-sm">${s.email || '-'}</td>
+        <td class="px-6 py-4 text-sm">${s.status || '-'}</td>
+        <td class="px-6 py-4 text-sm">
+          <button class="px-3 py-1 bg-red-50 text-red-700 rounded" onclick="deleteStudent('${s.nis}')">Hapus</button>
+        </td>
+      </tr>`));
+  }
+
+  function filterStudents() {
+    const c = $('studentFilterClass')?.value || '';
+    const q = ($('studentSearchInput')?.value || '').toLowerCase();
+    const f = G.students.filter(s => (!c || s.class === c) && (!q || (s.name || '').toLowerCase().includes(q) || (s.nis || '').toLowerCase().includes(q)));
+    renderStudents(f);
+  }
+
+  // ---- CRUD APIs (exposed) ----
+  async function createGame() {
+    const title = $('gameTitle')?.value || prompt('Judul game?');
+    if (!title) return;
+    const code = gameCode();
+    const g = {
+      gameCode: code,
+      title,
+      subject: $('gameSubject')?.value || 'Umum',
+      class: $('gameClass')?.value || 'All',
+      mode: $('gameMode')?.value || 'live',
+      duration: Number($('gameDuration')?.value || 30),
+      timeLimit: Number($('gameTimeLimit')?.value || 30),
+      deadline: $('gameDeadline')?.value || null,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+    };
+    G.games.unshift(g);
+    await persistAll();
+    renderGames(); renderDashboard();
+    if (byQS('#createGameModal')) hideCreateGameModal?.();
+    toast('Game berhasil dibuat: ' + code);
+  }
+
+  async function createQuestion() {
+    const text = $('questionText')?.value || prompt('Teks pertanyaan?');
+    if (!text) return;
+    const subject = $('questionSubject')?.value || 'Umum';
+    const difficulty = $('questionDifficulty')?.value || 'medium';
+    const options = [0, 1, 2, 3].map(i => ($('option' + i)?.value || prompt(`Pilihan ${i + 1}?`) || '—'));
+    const correct = Number((byQS('input[name="correctAnswer"]:checked')?.value) ?? 0);
+    const q = { id: uid('q'), subject, difficulty, question: text, options, correct, explanation: $('questionExplanation')?.value || '', createdAt: new Date().toISOString() };
+    G.questions.unshift(q);
+    await persistAll();
+    renderQuestions(); renderDashboard();
+    if (byQS('#createQuestionModal')) hideCreateQuestionModal?.();
+    toast('Soal ditambahkan');
+  }
+
+  async function createStudent() {
+    const nis = $('studentNIS')?.value || prompt('NIS?');
+    const name = $('studentName')?.value || prompt('Nama?');
+    if (!nis || !name) return;
+    const s = { nis, name, class: $('studentClass')?.value || prompt('Kelas?') || '7A', email: $('studentEmail')?.value || '', status: 'active', createdAt: new Date().toISOString() };
+    G.students = G.students.filter(x => x.nis !== nis).concat(s);
+    await persistAll();
+    renderStudents(); renderDashboard();
+    if (byQS('#createStudentModal')) hideCreateStudentModal?.();
+    toast('Siswa disimpan');
+  }
+
+  async function deleteQuestion(id) {
+    if (!confirm('Hapus soal ini?')) return;
+    G.questions = G.questions.filter(q => q.id !== id);
+    await persistAll();
+    renderQuestions(); renderDashboard();
+  }
+
+  async function deleteStudent(nis) {
+    if (!confirm('Hapus siswa ini?')) return;
+    G.students = G.students.filter(s => s.nis !== nis);
+    await persistAll();
+    renderStudents(); renderDashboard();
+  }
+
+  // ---- Reports & Charts ----
+  async function generateGradeReport() {
+    await ensureChart();
+    if (!hasEl('gradeChartCanvas')) return;
+    const ctx = $('gradeChartCanvas').getContext('2d');
+    const buckets = { '<50': 0, '50-70': 0, '70-85': 0, '>85': 0 };
+    // Fake distribution based on questions count
+    const n = Math.max(30, G.students.length * 2);
+    for (let i = 0; i < n; i++) {
+      const s = Math.floor(40 + Math.random() * 60); // 40..99
+      if (s < 50) buckets['<50']++; else if (s <= 70) buckets['50-70']++; else if (s <= 85) buckets['70-85']++; else buckets['>85']++;
+    }
+    if (G.charts.grade) G.charts.grade.destroy();
+    G.charts.grade = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: Object.keys(buckets), datasets: [{ label: 'Jumlah Siswa', data: Object.values(buckets) }] },
+      options: { responsive: true, plugins: { legend: { display: true } } }
+    });
+  }
+
+  async function generateActivityReport() {
+    await ensureChart();
+    if (!hasEl('activityChartCanvas')) return;
+    const ctx = $('activityChartCanvas').getContext('2d');
+    const labels = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 86400000).toLocaleDateString('id-ID', { weekday: 'short' }));
+    const values = labels.map(() => Math.floor(5 + Math.random() * 20));
+    if (G.charts.activity) G.charts.activity.destroy();
+    G.charts.activity = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Aktivitas', data: values }] }, options: { responsive: true } });
+  }
+
+  async function generateQuestionReport() {
+    await ensureChart();
+    if (!hasEl('gradeChartCanvas')) return;
+    const ctx = $('gradeChartCanvas').getContext('2d');
+    const counts = { easy: 0, medium: 0, hard: 0 };
+    G.questions.forEach(q => counts[q.difficulty] = (counts[q.difficulty] || 0) + 1);
+    if (G.charts.grade) G.charts.grade.destroy();
+    G.charts.grade = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts) }] }, options: { responsive: true } });
+  }
+
+  // ---- Import/Export ----
+  function dl(filename, text, mime = 'application/json') {
+    const blob = new Blob([text], { type: mime }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  }
+
+  async function exportData() {
+    const payload = { games: G.games, questions: G.questions, students: G.students, exportedAt: new Date().toISOString() };
+    dl('quizmaster-backup.json', JSON.stringify(payload, null, 2));
+  }
+
+  async function importData(fileOrEvent) {
+    let file = null;
+    if (fileOrEvent?.target?.files?.[0]) file = fileOrEvent.target.files[0];
+    else if (fileOrEvent instanceof File) file = fileOrEvent;
+    else {
+      const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = importData; input.click(); return;
+    }
+    const txt = await file.text();
+    const data = JSON.parse(txt);
+    if (Array.isArray(data.games)) G.games = data.games; // array form
+    else if (data.games && typeof data.games === 'object') G.games = Object.keys(data.games).map(k => ({ gameCode: k, ...data.games[k] }));
+    G.questions = data.questions || G.questions; G.students = data.students || G.students;
+    await persistAll();
+    renderGames(); renderQuestions(); renderStudents(); renderDashboard();
+    toast('Data berhasil di-import');
+  }
+
+  // ---- Excel/CSV Importers (Questions & Students) ----
+  async function importStudents() { await ensureXLSX();
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls,.csv'; input.onchange = async (e) => {
+      const f = e.target.files[0]; const buf = await f.arrayBuffer(); const wb = XLSX.read(buf, { type: 'array' }); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws);
+      rows.forEach(r => {
+        const s = { nis: String(r.NIS || r.nis || r.id || uid('N')), name: r.Nama || r.nama || r.Name || 'Tanpa Nama', class: r.Kelas || r.kelas || '7A', email: r.Email || r.email || '', status: 'active' };
+        G.students = G.students.filter(x => x.nis !== s.nis).concat(s);
+      });
+      await persistAll(); renderStudents(); renderDashboard(); toast('Import siswa selesai');
+    }; input.click();
+  }
+
+  async function importQuestions() { await ensureXLSX();
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls,.csv'; input.onchange = async (e) => {
+      const f = e.target.files[0]; const buf = await f.arrayBuffer(); const wb = XLSX.read(buf, { type: 'array' }); const ws = wb.Sheets[wb.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(ws);
+      rows.forEach(r => {
+        const id = uid('q');
+        const subject = r['Mata Pelajaran'] || r.subject || 'Umum';
+        const difficulty = (r.Tingkat || r.difficulty || 'medium').toString().toLowerCase();
+        const options = [r['Pilihan A'] || r.A || '', r['Pilihan B'] || r.B || '', r['Pilihan C'] || r.C || '', r['Pilihan D'] || r.D || ''];
+        const ans = (r['Jawaban Benar'] || r.correct || 'A').toString().trim().toUpperCase();
+        const correct = { A: 0, B: 1, C: 2, D: 3 }[ans] ?? 0;
+        const q = { id, subject, difficulty, question: r.Pertanyaan || r.question || '—', options, correct, explanation: r.Penjelasan || '', createdAt: new Date().toISOString() };
+        G.questions.unshift(q);
+      });
+      await persistAll(); renderQuestions(); renderDashboard(); toast('Import soal selesai');
+    }; input.click();
+  }
+
+  async function downloadStudentTemplate() { await ensureXLSX(); const data = [{ NIS: '2024001', Nama: 'Nama Siswa', Kelas: '7A', Email: 'email@school.edu' }]; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Siswa'); XLSX.writeFile(wb, 'template-siswa.xlsx'); }
+  async function downloadQuestionTemplate() { await ensureXLSX(); const data = [{ Pertanyaan: 'Contoh pertanyaan', 'Mata Pelajaran': 'Matematika', Tingkat: 'easy', 'Pilihan A': 'Jawaban A', 'Pilihan B': 'Jawaban B', 'Pilihan C': 'Jawaban C', 'Pilihan D': 'Jawaban D', 'Jawaban Benar': 'A', Penjelasan: 'Opsional' }]; const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Soal'); XLSX.writeFile(wb, 'template-soal.xlsx'); }
+
+  // ---- Backup (Firebase only) ----
+  async function backupDatabase() {
+    if (!G.db) { alert('Firebase tidak terdeteksi. Gunakan Export Data (JSON) sebagai alternatif.'); return; }
+    const snapshot = await G.db.ref('/').once('value');
+    const json = snapshot.val(); dl('firebase-backup.json', JSON.stringify(json, null, 2));
+  }
+
+  // ---- Modals (no-op safe toggles) ----
+  function show(id) { const el = $(id); if (el) el.classList.remove('hidden'); }
+  function hide(id) { const el = $(id); if (el) el.classList.add('hidden'); }
+  function showCreateGameModal() { show('createGameModal'); populateQuestionSelection(); }
+  function hideCreateGameModal() { hide('createGameModal'); }
+  function showCreateQuestionModal() { show('createQuestionModal'); }
+  function hideCreateQuestionModal() { hide('createQuestionModal'); }
+  function showCreateStudentModal() { show('createStudentModal'); }
+  function hideCreateStudentModal() { hide('createStudentModal'); }
+  function showImportStudentsModal() { show('importStudentsModal'); }
+  function hideImportStudentsModal() { hide('importStudentsModal'); }
+  function showImportQuestionsModal() { show('importQuestionsModal'); }
+  function hideImportQuestionsModal() { hide('importQuestionsModal'); }
+
+  // ---- Question selection for game modal ----
+  function populateQuestionSelection() {
+    const wrap = $('questionSelection'); if (!wrap) return; wrap.innerHTML = '';
+    G.questions.forEach(q => wrap.insertAdjacentHTML('beforeend', `<label class="flex items-start gap-3"><input type="checkbox" data-qid="${q.id}"><span class="text-sm">${q.question}</span></label>`));
+  }
+
+  // ---- Section navigation ----
+  function showSection(key) {
+    const sections = ['dashboard', 'games', 'questions', 'students', 'reports', 'settings'];
+    sections.forEach(s => { const el = $(s + 'Section'); if (el) el.classList.toggle('hidden', s !== key); });
+    document.querySelectorAll('.nav-item').forEach(b => { if (b.dataset.section === key) { b.classList.add('bg-blue-600', 'text-white'); b.classList.remove('text-gray-600'); } else { b.classList.remove('bg-blue-600', 'text-white'); b.classList.add('text-gray-600'); } });
+    if (key === 'dashboard') renderDashboard();
+    if (key === 'games') renderGames();
+    if (key === 'questions') renderQuestions();
+    if (key === 'students') renderStudents();
+  }
+
+  // ---- Game control (lightweight demo) ----
+  function openControl(code) {
+    if (!code) return alert('Game tidak ditemukan');
+    $('controlGameTitle') && ($('controlGameTitle').textContent = 'Kontrol Game');
+    $('controlGameCode') && ($('controlGameCode').textContent = code);
+    show('gameControlModal');
+  }
+  function hideGameControlModal() { hide('gameControlModal'); }
+  async function startLiveGame() {
+    const code = $('controlGameCode')?.textContent; if (!code) return;
+    G.games = G.games.map(g => g.gameCode === code ? { ...g, status: 'active' } : g);
+    await persistAll(); renderGames(); renderDashboard(); toast('Game dimulai');
+    $('startGameBtn') && $('startGameBtn').classList.add('hidden');
+    $('endGameBtn') && $('endGameBtn').classList.remove('hidden');
+    $('gameStatus') && ($('gameStatus').textContent = 'Sedang Berlangsung');
+  }
+  async function endLiveGame() {
+    const code = $('controlGameCode')?.textContent; if (!code) return;
+    G.games = G.games.map(g => g.gameCode === code ? { ...g, status: 'completed' } : g);
+    await persistAll(); renderGames(); renderDashboard(); toast('Game diakhiri');
+    $('startGameBtn') && $('startGameBtn').classList.remove('hidden');
+    $('endGameBtn') && $('endGameBtn').classList.add('hidden');
+    $('gameStatus') && ($('gameStatus').textContent = 'Selesai');
+  }
+
+  // ---- Tiny toast ----
+  function toast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg; t.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 14px;border-radius:10px;opacity:0;transition:all .3s;z-index:9999';
+    document.body.appendChild(t); requestAnimationFrame(() => { t.style.opacity = '1'; t.style.bottom = '24px'; }); setTimeout(() => { t.style.opacity = '0'; t.style.bottom = '16px'; setTimeout(() => t.remove(), 300); }, 1600);
+  }
+
+  // ---- Public API (only attach if missing to avoid overwriting) ----
+  const api = {
+    // CRUD + render
+    renderDashboard, renderGames, renderQuestions, renderStudents,
+    filterGames, filterQuestions, filterStudents,
+    createGame, createQuestion, createStudent,
+    deleteQuestion, deleteStudent,
+    // Reports
+    generateGradeReport, generateActivityReport, generateQuestionReport,
+    // Import/Export
+    exportData, importData, importStudents, importQuestions,
+    downloadStudentTemplate, downloadQuestionTemplate,
+    // Firebase backup
+    backupDatabase,
+    // Modals & sections
+    showCreateGameModal, hideCreateGameModal,
+    showCreateQuestionModal, hideCreateQuestionModal,
+    showCreateStudentModal, hideCreateStudentModal,
+    showImportStudentsModal, hideImportStudentsModal,
+    showImportQuestionsModal, hideImportQuestionsModal,
+    populateQuestionSelection,
+    showSection,
+    // Game control
+    openControl, hideGameControlModal, startLiveGame, endLiveGame,
+  };
+  Object.keys(api).forEach(k => { if (!(k in window)) window[k] = api[k]; });
+
+  // ---- Auto init ----
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      await loadAll();
+      renderDashboard(); renderGames(); renderQuestions(); renderStudents();
+      // Bind nav items if exist
+      document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+    } catch (e) { console.error('[Inject] init error', e); }
+  });
+})();
+
+</script>
 </html>
