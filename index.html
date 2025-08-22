@@ -7,10 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, set, get, push, onValue, off, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-        
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
         // Firebase configuration - SUDAH DIKONFIGURASI ✅
         const firebaseConfig = {
             apiKey: "AIzaSyBY_QE1TeFyh0-zejlbEuHS3E3K0TquI4Y",
@@ -23,11 +22,10 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
         
-        // Make Firebase available globally
-        window.firebase = { database, ref, set, get, push, onValue, off, remove, update };
+        console.log('🔥 Firebase initialized successfully');
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
@@ -158,12 +156,19 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">NIS (Nomor Induk Siswa)</label>
-                    <input type="text" id="studentNIS" placeholder="Masukkan NIS Anda" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="text" id="studentNIS" placeholder="Masukkan NIS Anda" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" onkeypress="if(event.key==='Enter') studentLogin()" oninput="debounceLoadStudentInfo()">
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                    <input type="text" id="studentName" placeholder="Masukkan Nama Lengkap" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <!-- Student Info Display (Hidden by default) -->
+                <div id="studentInfoDisplay" class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="text-2xl">👤</div>
+                        <div>
+                            <div class="font-semibold text-blue-900" id="displayStudentName">-</div>
+                            <div class="text-sm text-blue-700" id="displayStudentClass">-</div>
+                            <div class="text-xs text-blue-600" id="displayStudentNIS">-</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <button onclick="studentLogin()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all">
@@ -196,12 +201,18 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">NIS</label>
-                    <input type="text" id="quickNIS" placeholder="Masukkan NIS" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <input type="text" id="quickNIS" placeholder="Masukkan NIS" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent" onblur="loadQuickStudentInfo()">
                 </div>
                 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama</label>
-                    <input type="text" id="quickName" placeholder="Masukkan nama" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <!-- Quick Student Info Display -->
+                <div id="quickStudentInfo" class="hidden bg-green-50 border border-green-200 rounded-xl p-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="text-lg">👤</div>
+                        <div>
+                            <div class="font-medium text-green-900" id="quickDisplayName">-</div>
+                            <div class="text-xs text-green-700" id="quickDisplayClass">-</div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="flex space-x-4 pt-4">
@@ -538,6 +549,20 @@
             history: []
         };
 
+        // Sample student database for demo
+        const sampleStudents = {
+            '2024001': { name: 'Ahmad Fauzi', class: '7A', email: 'ahmad.fauzi@school.edu' },
+            '2024002': { name: 'Siti Nurhaliza', class: '7A', email: 'siti.nurhaliza@school.edu' },
+            '2024003': { name: 'Budi Santoso', class: '7B', email: 'budi.santoso@school.edu' },
+            '2024004': { name: 'Dewi Sartika', class: '7B', email: 'dewi.sartika@school.edu' },
+            '2024005': { name: 'Rizki Pratama', class: '8A', email: 'rizki.pratama@school.edu' },
+            '2024006': { name: 'Maya Indira', class: '8A', email: 'maya.indira@school.edu' },
+            '2024007': { name: 'Andi Wijaya', class: '8B', email: 'andi.wijaya@school.edu' },
+            '2024008': { name: 'Putri Maharani', class: '8B', email: 'putri.maharani@school.edu' },
+            '2024009': { name: 'Fajar Nugroho', class: '9A', email: 'fajar.nugroho@school.edu' },
+            '2024010': { name: 'Indah Permata', class: '9A', email: 'indah.permata@school.edu' }
+        };
+
         // Firebase Database wrapper
         const db = {
             async init() {
@@ -553,8 +578,16 @@
             
             async getStudent(nis) {
                 try {
-                    const { database, ref, get } = window.firebase;
-                    const snapshot = await get(ref(database, `students/${nis}`));
+                    // First check sample database
+                    if (sampleStudents[nis]) {
+                        return {
+                            nis: nis,
+                            ...sampleStudents[nis]
+                        };
+                    }
+                    
+                    // Then try Firebase
+                    const snapshot = await database.ref(`students/${nis}`).once('value');
                     if (snapshot.exists()) {
                         return {
                             nis: nis,
@@ -564,19 +597,20 @@
                     return null;
                 } catch (error) {
                     console.error('Error getting student:', error);
-                    // Fallback for demo
-                    return {
-                        nis: nis,
-                        name: 'Demo Student',
-                        class: '7A'
-                    };
+                    // Check sample database as fallback
+                    if (sampleStudents[nis]) {
+                        return {
+                            nis: nis,
+                            ...sampleStudents[nis]
+                        };
+                    }
+                    return null;
                 }
             },
             
             async getGame(gameCode) {
                 try {
-                    const { database, ref, get } = window.firebase;
-                    const snapshot = await get(ref(database, `games/${gameCode}`));
+                    const snapshot = await database.ref(`games/${gameCode}`).once('value');
                     if (snapshot.exists()) {
                         return {
                             gameCode: gameCode,
@@ -592,9 +626,8 @@
             
             async joinGame(gameCode, student) {
                 try {
-                    const { database, ref, get, update } = window.firebase;
-                    const gameRef = ref(database, `games/${gameCode}`);
-                    const snapshot = await get(gameRef);
+                    const gameRef = database.ref(`games/${gameCode}`);
+                    const snapshot = await gameRef.once('value');
                     
                     if (snapshot.exists()) {
                         const gameData = snapshot.val();
@@ -611,7 +644,7 @@
                                 score: 0
                             });
                             
-                            await update(ref(database, `games/${gameCode}`), {
+                            await database.ref(`games/${gameCode}`).update({
                                 players: players
                             });
                         }
@@ -627,8 +660,7 @@
             
             async submitAnswer(gameCode, nis, questionIndex, answer, timeSpent) {
                 try {
-                    const { database, ref, set } = window.firebase;
-                    await set(ref(database, `answers/${gameCode}/${nis}/${questionIndex}`), {
+                    await database.ref(`answers/${gameCode}/${nis}/${questionIndex}`).set({
                         answer: answer,
                         timeSpent: timeSpent,
                         timestamp: Date.now()
@@ -642,8 +674,7 @@
             
             async submitFinalScore(gameCode, nis, score, answers, completedAt) {
                 try {
-                    const { database, ref, set } = window.firebase;
-                    await set(ref(database, `grades/${gameCode}/${nis}`), {
+                    await database.ref(`grades/${gameCode}/${nis}`).set({
                         score: score,
                         answers: answers,
                         completedAt: completedAt,
@@ -658,8 +689,7 @@
             
             async getAssignments(studentClass) {
                 try {
-                    const { database, ref, get } = window.firebase;
-                    const snapshot = await get(ref(database, 'games'));
+                    const snapshot = await database.ref('games').once('value');
                     const assignments = [];
                     
                     if (snapshot.exists()) {
@@ -686,8 +716,7 @@
             
             async getExams(studentClass) {
                 try {
-                    const { database, ref, get } = window.firebase;
-                    const snapshot = await get(ref(database, 'games'));
+                    const snapshot = await database.ref('games').once('value');
                     const exams = [];
                     
                     if (snapshot.exists()) {
@@ -714,8 +743,7 @@
             
             async getStudentHistory(nis) {
                 try {
-                    const { database, ref, get } = window.firebase;
-                    const snapshot = await get(ref(database, 'grades'));
+                    const snapshot = await database.ref('grades').once('value');
                     const history = [];
                     
                     if (snapshot.exists()) {
@@ -741,13 +769,12 @@
         // Authentication
         async function studentLogin() {
             const nis = document.getElementById('studentNIS').value.trim();
-            const name = document.getElementById('studentName').value.trim();
             
-            if (!nis || !name) {
+            if (!nis) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Data Tidak Lengkap!',
-                    text: 'Mohon lengkapi NIS dan nama lengkap.',
+                    title: 'NIS Kosong!',
+                    text: 'Mohon masukkan NIS Anda.',
                     confirmButtonColor: '#3b82f6'
                 });
                 return;
@@ -755,7 +782,7 @@
             
             try {
                 Swal.fire({
-                    title: 'Memverifikasi Data...',
+                    title: 'Memverifikasi NIS...',
                     text: 'Mohon tunggu sebentar.',
                     allowOutsideClick: false,
                     didOpen: () => {
@@ -766,19 +793,26 @@
                 await db.init();
                 const student = await db.getStudent(nis);
                 
-                if (student && student.name.toLowerCase().includes(name.toLowerCase())) {
+                if (student) {
                     appState.currentStudent = student;
                     showDashboard();
                     Swal.close();
+                    
+                    // Show welcome message
+                    Swal.fire({
+                        icon: 'success',
+                        title: `Selamat Datang, ${student.name}!`,
+                        text: `Kelas: ${student.class}`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                 } else {
-                    // Allow demo access
-                    appState.currentStudent = {
-                        nis: nis,
-                        name: name,
-                        class: '7A'
-                    };
-                    showDashboard();
-                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'NIS Tidak Ditemukan!',
+                        text: 'NIS yang Anda masukkan tidak terdaftar dalam sistem.',
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             } catch (error) {
                 Swal.fire({
@@ -787,6 +821,57 @@
                     text: 'Terjadi kesalahan saat login. Silakan coba lagi.',
                     confirmButtonColor: '#ef4444'
                 });
+            }
+        }
+
+        // Auto-load student info when NIS is entered
+        async function loadStudentInfo() {
+            const nis = document.getElementById('studentNIS').value.trim();
+            const infoDisplay = document.getElementById('studentInfoDisplay');
+            
+            if (!nis) {
+                infoDisplay.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const student = await db.getStudent(nis);
+                if (student) {
+                    document.getElementById('displayStudentName').textContent = student.name;
+                    document.getElementById('displayStudentClass').textContent = `Kelas: ${student.class}`;
+                    document.getElementById('displayStudentNIS').textContent = `NIS: ${student.nis}`;
+                    infoDisplay.classList.remove('hidden');
+                } else {
+                    infoDisplay.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading student info:', error);
+                infoDisplay.classList.add('hidden');
+            }
+        }
+
+        // Quick join student info loader
+        async function loadQuickStudentInfo() {
+            const nis = document.getElementById('quickNIS').value.trim();
+            const infoDisplay = document.getElementById('quickStudentInfo');
+            
+            if (!nis) {
+                infoDisplay.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const student = await db.getStudent(nis);
+                if (student) {
+                    document.getElementById('quickDisplayName').textContent = student.name;
+                    document.getElementById('quickDisplayClass').textContent = `Kelas: ${student.class}`;
+                    infoDisplay.classList.remove('hidden');
+                } else {
+                    infoDisplay.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading quick student info:', error);
+                infoDisplay.classList.add('hidden');
             }
         }
 
@@ -934,19 +1019,30 @@
         async function joinGameDirect() {
             const gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
             const nis = document.getElementById('quickNIS').value.trim();
-            const name = document.getElementById('quickName').value.trim();
             
-            if (!gameCode || !nis || !name) {
+            if (!gameCode || !nis) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Data Tidak Lengkap!',
-                    text: 'Mohon lengkapi semua data.',
+                    text: 'Mohon masukkan kode game dan NIS.',
                     confirmButtonColor: '#f59e0b'
                 });
                 return;
             }
             
-            appState.currentStudent = { nis, name, class: 'Unknown' };
+            // Get student data from NIS
+            const student = await db.getStudent(nis);
+            if (!student) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'NIS Tidak Ditemukan!',
+                    text: 'NIS yang Anda masukkan tidak terdaftar dalam sistem.',
+                    confirmButtonColor: '#ef4444'
+                });
+                return;
+            }
+            
+            appState.currentStudent = student;
             await joinGame(gameCode);
             hideJoinGameModal();
         }
@@ -1747,10 +1843,17 @@
             });
         });
 
+        // Debounce function for auto-lookup
+        let studentLookupTimeout;
+        function debounceLoadStudentInfo() {
+            clearTimeout(studentLookupTimeout);
+            studentLookupTimeout = setTimeout(loadStudentInfo, 500);
+        }
+
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
             db.init();
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972f600464e140ce',t:'MTc1NTgzNDMwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972f7090c2fdf918',t:'MTc1NTgzNDk4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
