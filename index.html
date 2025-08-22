@@ -1,0 +1,900 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizMaster Pro - Portal Siswa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, push, onValue, off, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        // Firebase configuration - SUDAH DIKONFIGURASI ✅
+        const firebaseConfig = {
+            apiKey: "AIzaSyBY_QE1TeFyh0-zejlbEuHS3E3K0TquI4Y",
+            authDomain: "quizmaster-pro-ff3a2.firebaseapp.com",
+            databaseURL: "https://quizmaster-pro-ff3a2-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "quizmaster-pro-ff3a2",
+            storageBucket: "quizmaster-pro-ff3a2.firebasestorage.app",
+            messagingSenderId: "290206514077",
+            appId: "1:290206514077:web:aabfd60346f1bd9c6a4d74"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        
+        // Make Firebase available globally
+        window.firebase = { database, ref, set, get, push, onValue, off, remove, update };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Nunito', sans-serif; }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .timer-warning {
+            animation: timerPulse 1s infinite;
+        }
+        
+        @keyframes timerPulse {
+            0%, 100% { background-color: #ef4444; }
+            50% { background-color: #dc2626; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-indigo-700">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md bounce-in">
+            <div class="text-center mb-8">
+                <div class="text-4xl mb-4">🎓</div>
+                <h2 class="text-3xl font-bold text-gray-800">Portal Siswa</h2>
+                <p class="text-gray-600 mt-2">QuizMaster Pro - Sistem Quiz Interaktif</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">NIS (Nomor Induk Siswa)</label>
+                    <input type="text" id="studentNIS" placeholder="Contoh: 2024001" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <button onclick="studentLogin()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all">
+                    🚀 Masuk Sistem
+                </button>
+                
+                <div class="text-xs text-gray-500 text-center mt-4">
+                    Demo NIS: 2024001, 2024002, 2024003, 2024004, 2024005
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboardScreen" class="min-h-screen bg-gray-50 hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-xl font-bold text-gray-900">🎯 QuizMaster Pro</h1>
+                        <div class="hidden sm:block">
+                            <span class="text-sm text-gray-600">Portal Siswa</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900" id="studentName">-</div>
+                            <div class="text-xs text-gray-500" id="studentClass">-</div>
+                        </div>
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700 text-sm">Keluar</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Join Game Section -->
+        <div id="joinGameSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Bergabung ke Quiz</h2>
+                <p class="text-gray-600">Masukkan kode game yang diberikan guru untuk mulai quiz</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-sm p-8 max-w-md mx-auto">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kode Game</label>
+                        <input type="text" id="gameCodeInput" placeholder="Contoh: ABC123" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg font-mono uppercase" maxlength="6">
+                    </div>
+                    
+                    <button onclick="joinGame()" class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-blue-700 transition-all">
+                        🎮 Bergabung ke Game
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Recent Games -->
+            <div class="mt-12">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Riwayat Quiz</h3>
+                <div id="recentGamesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Recent games will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Room -->
+        <div id="waitingRoomSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+            <div class="text-center">
+                <div class="bg-white rounded-2xl shadow-sm p-8">
+                    <div class="text-6xl mb-4 pulse-animation">⏳</div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Menunggu Game Dimulai</h2>
+                    <p class="text-gray-600 mb-6">Guru sedang mempersiapkan quiz. Mohon tunggu sebentar...</p>
+                    
+                    <div class="bg-gray-50 rounded-xl p-6 mb-6">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Kode Game:</span>
+                                <div class="font-mono font-bold text-lg" id="currentGameCode">-</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Mata Pelajaran:</span>
+                                <div class="font-medium" id="currentSubject">-</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Materi:</span>
+                                <div class="font-medium" id="currentMaterial">-</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Pemain:</span>
+                                <div class="font-medium" id="playerCount">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="leaveGame()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        🚪 Keluar dari Game
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="quizSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+            <!-- Quiz Header -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900" id="quizTitle">Quiz Matematika</h2>
+                        <p class="text-gray-600" id="quizInfo">Soal 1 dari 10</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-blue-600" id="timer">30</div>
+                        <div class="text-xs text-gray-500">detik</div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="mt-4">
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="progressBar" style="width: 10%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Question Card -->
+            <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
+                <div class="text-center mb-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4" id="questionText">Berapa hasil dari 2 + 2?</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="optionsContainer">
+                    <!-- Options will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Quiz Controls -->
+            <div class="text-center">
+                <button id="nextButton" onclick="nextQuestion()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                    Lanjut ➡️
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 hidden">
+            <div class="text-center">
+                <div class="bg-white rounded-2xl shadow-sm p-8">
+                    <div class="text-6xl mb-4" id="resultEmoji">🎉</div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Quiz Selesai!</h2>
+                    <p class="text-gray-600 mb-8">Terima kasih telah mengikuti quiz</p>
+                    
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                            <div>
+                                <div class="text-2xl font-bold text-blue-600" id="finalScore">85</div>
+                                <div class="text-sm text-gray-600">Nilai Akhir</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-green-600" id="correctAnswers">8</div>
+                                <div class="text-sm text-gray-600">Jawaban Benar</div>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-bold text-gray-600" id="totalQuestions">10</div>
+                                <div class="text-sm text-gray-600">Total Soal</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <button onclick="viewDetailedResults()" class="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors">
+                            📊 Lihat Detail Jawaban
+                        </button>
+                        <br>
+                        <button onclick="backToHome()" class="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors">
+                            🏠 Kembali ke Beranda
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Results Modal -->
+    <div id="detailedResultsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Detail Jawaban Quiz</h3>
+                <button onclick="hideDetailedResults()" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            
+            <div id="detailedResultsContent" class="space-y-6">
+                <!-- Detailed results will be populated here -->
+            </div>
+            
+            <div class="mt-8 text-center">
+                <button onclick="hideDetailedResults()" class="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let appState = {
+            currentStudent: null,
+            currentGame: null,
+            currentQuiz: null,
+            currentQuestionIndex: 0,
+            userAnswers: [],
+            timer: null,
+            timeLeft: 30,
+            gameListener: null
+        };
+
+        // Firebase Database wrapper
+        const db = {
+            async init() {
+                try {
+                    console.log('🔥 Initializing Firebase connection...');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Firebase connection failed:', error);
+                    return false;
+                }
+            },
+            
+            async getStudent(nis) {
+                try {
+                    const { database, ref, get } = window.firebase;
+                    const snapshot = await get(ref(database, `students/${nis}`));
+                    if (snapshot.exists()) {
+                        return {
+                            nis: nis,
+                            ...snapshot.val()
+                        };
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Error getting student:', error);
+                    // Fallback to sample data
+                    const sampleStudents = {
+                        '2024001': { name: 'Ahmad Fauzi', class: '7A' },
+                        '2024002': { name: 'Siti Nurhaliza', class: '7A' },
+                        '2024003': { name: 'Budi Santoso', class: '7B' },
+                        '2024004': { name: 'Rina Kartika', class: '7B' },
+                        '2024005': { name: 'Doni Pratama', class: '8A' }
+                    };
+                    
+                    if (sampleStudents[nis]) {
+                        return {
+                            nis: nis,
+                            ...sampleStudents[nis]
+                        };
+                    }
+                    return null;
+                }
+            },
+            
+            async getGame(gameCode) {
+                try {
+                    const { database, ref, get } = window.firebase;
+                    const snapshot = await get(ref(database, `games/${gameCode}`));
+                    if (snapshot.exists()) {
+                        return {
+                            gameCode: gameCode,
+                            ...snapshot.val()
+                        };
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Error getting game:', error);
+                    return null;
+                }
+            },
+            
+            async joinGame(gameCode, student) {
+                try {
+                    const { database, ref, get, update } = window.firebase;
+                    const gameRef = ref(database, `games/${gameCode}`);
+                    const snapshot = await get(gameRef);
+                    
+                    if (!snapshot.exists()) {
+                        throw new Error('Game tidak ditemukan');
+                    }
+                    
+                    const gameData = snapshot.val();
+                    const players = gameData.players || [];
+                    
+                    // Check if student already joined
+                    if (!players.find(p => p.nis === student.nis)) {
+                        players.push({
+                            nis: student.nis,
+                            name: student.name,
+                            class: student.class,
+                            joinedAt: Date.now()
+                        });
+                        
+                        await update(gameRef, { players: players });
+                    }
+                    
+                    return {
+                        gameCode: gameCode,
+                        ...gameData,
+                        players: players
+                    };
+                } catch (error) {
+                    console.error('Error joining game:', error);
+                    throw error;
+                }
+            },
+            
+            async submitAnswer(gameCode, nis, questionIndex, answer, timeSpent) {
+                try {
+                    const { database, ref, set } = window.firebase;
+                    const answerRef = ref(database, `answers/${gameCode}/${nis}/${questionIndex}`);
+                    await set(answerRef, {
+                        answer: answer,
+                        timeSpent: timeSpent,
+                        timestamp: Date.now()
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Error submitting answer:', error);
+                    return false;
+                }
+            },
+            
+            async submitFinalScore(gameCode, nis, score, answers) {
+                try {
+                    const { database, ref, set } = window.firebase;
+                    const gradeRef = ref(database, `grades/${gameCode}/${nis}`);
+                    await set(gradeRef, {
+                        score: score,
+                        answers: answers,
+                        completedAt: Date.now()
+                    });
+                    return true;
+                } catch (error) {
+                    console.error('Error submitting final score:', error);
+                    return false;
+                }
+            },
+            
+            listenToGame(gameCode, callback) {
+                try {
+                    const { database, ref, onValue } = window.firebase;
+                    const gameRef = ref(database, `games/${gameCode}`);
+                    const unsubscribe = onValue(gameRef, (snapshot) => {
+                        if (snapshot.exists()) {
+                            callback({
+                                gameCode: gameCode,
+                                ...snapshot.val()
+                            });
+                        }
+                    });
+                    return unsubscribe;
+                } catch (error) {
+                    console.error('Error listening to game:', error);
+                    return null;
+                }
+            }
+        };
+
+        // Authentication
+        async function studentLogin() {
+            const nis = document.getElementById('studentNIS').value.trim();
+            
+            if (!nis) {
+                alert('Mohon masukkan NIS!');
+                return;
+            }
+            
+            try {
+                await db.init();
+                const student = await db.getStudent(nis);
+                
+                if (student) {
+                    appState.currentStudent = student;
+                    showDashboard();
+                } else {
+                    alert('NIS tidak ditemukan! Hubungi guru untuk mendaftarkan akun.');
+                }
+            } catch (error) {
+                alert('Gagal login. Coba lagi.');
+                console.error('Login error:', error);
+            }
+        }
+
+        function logout() {
+            // Clean up listeners
+            if (appState.gameListener) {
+                appState.gameListener();
+                appState.gameListener = null;
+            }
+            
+            // Clear timer
+            if (appState.timer) {
+                clearInterval(appState.timer);
+                appState.timer = null;
+            }
+            
+            // Reset state
+            appState.currentStudent = null;
+            appState.currentGame = null;
+            appState.currentQuiz = null;
+            appState.currentQuestionIndex = 0;
+            appState.userAnswers = [];
+            
+            // Show login screen
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboardScreen').classList.add('hidden');
+        }
+
+        // Navigation
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+            
+            // Update student info
+            document.getElementById('studentName').textContent = appState.currentStudent.name;
+            document.getElementById('studentClass').textContent = `Kelas ${appState.currentStudent.class}`;
+            
+            showJoinGameSection();
+        }
+
+        function showJoinGameSection() {
+            hideAllSections();
+            document.getElementById('joinGameSection').classList.remove('hidden');
+            loadRecentGames();
+        }
+
+        function showWaitingRoom() {
+            hideAllSections();
+            document.getElementById('waitingRoomSection').classList.remove('hidden');
+        }
+
+        function showQuizSection() {
+            hideAllSections();
+            document.getElementById('quizSection').classList.remove('hidden');
+        }
+
+        function showResultsSection() {
+            hideAllSections();
+            document.getElementById('resultsSection').classList.remove('hidden');
+        }
+
+        function hideAllSections() {
+            document.getElementById('joinGameSection').classList.add('hidden');
+            document.getElementById('waitingRoomSection').classList.add('hidden');
+            document.getElementById('quizSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+        }
+
+        // Game functions
+        async function joinGame() {
+            const gameCode = document.getElementById('gameCodeInput').value.trim().toUpperCase();
+            
+            if (!gameCode) {
+                alert('Mohon masukkan kode game!');
+                return;
+            }
+            
+            if (gameCode.length !== 6) {
+                alert('Kode game harus 6 karakter!');
+                return;
+            }
+            
+            try {
+                const game = await db.joinGame(gameCode, appState.currentStudent);
+                appState.currentGame = game;
+                appState.currentQuiz = game.quiz;
+                
+                // Update waiting room info
+                document.getElementById('currentGameCode').textContent = gameCode;
+                document.getElementById('currentSubject').textContent = game.subject || '-';
+                document.getElementById('currentMaterial').textContent = game.material || '-';
+                document.getElementById('playerCount').textContent = game.players?.length || 0;
+                
+                // Start listening to game updates
+                appState.gameListener = db.listenToGame(gameCode, (updatedGame) => {
+                    appState.currentGame = updatedGame;
+                    
+                    if (updatedGame.started && !updatedGame.completed) {
+                        startQuiz();
+                    } else if (updatedGame.completed) {
+                        // Game ended by admin
+                        alert('Game telah diakhiri oleh guru.');
+                        backToHome();
+                    }
+                    
+                    // Update player count
+                    document.getElementById('playerCount').textContent = updatedGame.players?.length || 0;
+                });
+                
+                showWaitingRoom();
+                alert(`Berhasil bergabung ke game ${gameCode}! 🎉`);
+                
+            } catch (error) {
+                alert('Gagal bergabung ke game. Periksa kode game atau hubungi guru.');
+                console.error('Join game error:', error);
+            }
+        }
+
+        function leaveGame() {
+            if (confirm('Yakin ingin keluar dari game?')) {
+                if (appState.gameListener) {
+                    appState.gameListener();
+                    appState.gameListener = null;
+                }
+                
+                appState.currentGame = null;
+                appState.currentQuiz = null;
+                showJoinGameSection();
+            }
+        }
+
+        // Quiz functions
+        function startQuiz() {
+            if (!appState.currentQuiz || !appState.currentQuiz.questions) {
+                alert('Quiz tidak valid!');
+                return;
+            }
+            
+            appState.currentQuestionIndex = 0;
+            appState.userAnswers = [];
+            
+            showQuizSection();
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const quiz = appState.currentQuiz;
+            const questionIndex = appState.currentQuestionIndex;
+            const question = quiz.questions[questionIndex];
+            
+            if (!question) {
+                finishQuiz();
+                return;
+            }
+            
+            // Update quiz info
+            document.getElementById('quizTitle').textContent = quiz.title || 'Quiz';
+            document.getElementById('quizInfo').textContent = `Soal ${questionIndex + 1} dari ${quiz.questions.length}`;
+            document.getElementById('questionText').textContent = question.question;
+            
+            // Update progress bar
+            const progress = ((questionIndex + 1) / quiz.questions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            
+            // Display options
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionButton = document.createElement('button');
+                optionButton.className = 'option-btn p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left';
+                optionButton.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center font-semibold">
+                            ${String.fromCharCode(65 + index)}
+                        </div>
+                        <div class="flex-1">${option}</div>
+                    </div>
+                `;
+                optionButton.onclick = () => selectOption(index, optionButton);
+                optionsContainer.appendChild(optionButton);
+            });
+            
+            // Start timer
+            startTimer(question.timeLimit || 30);
+            
+            // Disable next button
+            document.getElementById('nextButton').disabled = true;
+        }
+
+        function selectOption(optionIndex, buttonElement) {
+            // Remove previous selection
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'bg-blue-50');
+                btn.classList.add('border-gray-200');
+            });
+            
+            // Highlight selected option
+            buttonElement.classList.remove('border-gray-200');
+            buttonElement.classList.add('border-blue-500', 'bg-blue-50');
+            
+            // Store answer
+            const timeSpent = (appState.currentQuiz.questions[appState.currentQuestionIndex].timeLimit || 30) - appState.timeLeft;
+            appState.userAnswers[appState.currentQuestionIndex] = {
+                questionIndex: appState.currentQuestionIndex,
+                selectedOption: optionIndex,
+                timeSpent: timeSpent,
+                timestamp: Date.now()
+            };
+            
+            // Enable next button
+            document.getElementById('nextButton').disabled = false;
+            
+            // Submit answer to database
+            db.submitAnswer(
+                appState.currentGame.gameCode,
+                appState.currentStudent.nis,
+                appState.currentQuestionIndex,
+                optionIndex,
+                timeSpent
+            );
+        }
+
+        function startTimer(duration) {
+            appState.timeLeft = duration;
+            const timerElement = document.getElementById('timer');
+            
+            if (appState.timer) {
+                clearInterval(appState.timer);
+            }
+            
+            appState.timer = setInterval(() => {
+                appState.timeLeft--;
+                timerElement.textContent = appState.timeLeft;
+                
+                // Warning when time is low
+                if (appState.timeLeft <= 10) {
+                    timerElement.parentElement.classList.add('timer-warning');
+                }
+                
+                if (appState.timeLeft <= 0) {
+                    clearInterval(appState.timer);
+                    // Auto-submit if no answer selected
+                    if (!appState.userAnswers[appState.currentQuestionIndex]) {
+                        appState.userAnswers[appState.currentQuestionIndex] = {
+                            questionIndex: appState.currentQuestionIndex,
+                            selectedOption: -1, // No answer
+                            timeSpent: duration,
+                            timestamp: Date.now()
+                        };
+                    }
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function nextQuestion() {
+            if (appState.timer) {
+                clearInterval(appState.timer);
+            }
+            
+            // Remove timer warning
+            document.getElementById('timer').parentElement.classList.remove('timer-warning');
+            
+            appState.currentQuestionIndex++;
+            
+            if (appState.currentQuestionIndex >= appState.currentQuiz.questions.length) {
+                finishQuiz();
+            } else {
+                displayQuestion();
+            }
+        }
+
+        function finishQuiz() {
+            if (appState.timer) {
+                clearInterval(appState.timer);
+            }
+            
+            // Calculate score
+            let correctAnswers = 0;
+            const totalQuestions = appState.currentQuiz.questions.length;
+            
+            appState.userAnswers.forEach((answer, index) => {
+                const question = appState.currentQuiz.questions[index];
+                if (answer && answer.selectedOption === question.correct) {
+                    correctAnswers++;
+                }
+            });
+            
+            const score = Math.round((correctAnswers / totalQuestions) * 100);
+            
+            // Submit final score
+            db.submitFinalScore(
+                appState.currentGame.gameCode,
+                appState.currentStudent.nis,
+                score,
+                appState.userAnswers
+            );
+            
+            // Display results
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('correctAnswers').textContent = correctAnswers;
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            
+            // Set emoji based on score
+            let emoji = '🎉';
+            if (score >= 90) emoji = '🏆';
+            else if (score >= 80) emoji = '🎉';
+            else if (score >= 70) emoji = '👍';
+            else if (score >= 60) emoji = '😊';
+            else emoji = '💪';
+            
+            document.getElementById('resultEmoji').textContent = emoji;
+            
+            showResultsSection();
+        }
+
+        // Results functions
+        function viewDetailedResults() {
+            const modal = document.getElementById('detailedResultsModal');
+            const content = document.getElementById('detailedResultsContent');
+            content.innerHTML = '';
+            
+            appState.currentQuiz.questions.forEach((question, index) => {
+                const userAnswer = appState.userAnswers[index];
+                const isCorrect = userAnswer && userAnswer.selectedOption === question.correct;
+                
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'border rounded-xl p-6';
+                questionDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-semibold text-gray-900">Soal ${index + 1}</h4>
+                        <span class="px-3 py-1 rounded-full text-sm ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${isCorrect ? '✅ Benar' : '❌ Salah'}
+                        </span>
+                    </div>
+                    
+                    <p class="text-gray-800 mb-4">${question.question}</p>
+                    
+                    <div class="space-y-2">
+                        ${question.options.map((option, optIndex) => {
+                            let className = 'p-3 rounded-lg border ';
+                            if (optIndex === question.correct) {
+                                className += 'bg-green-50 border-green-200 text-green-800';
+                            } else if (userAnswer && userAnswer.selectedOption === optIndex) {
+                                className += 'bg-red-50 border-red-200 text-red-800';
+                            } else {
+                                className += 'bg-gray-50 border-gray-200';
+                            }
+                            
+                            return `
+                                <div class="${className}">
+                                    <span class="font-medium">${String.fromCharCode(65 + optIndex)}.</span> ${option}
+                                    ${optIndex === question.correct ? ' <span class="text-green-600">✓</span>' : ''}
+                                    ${userAnswer && userAnswer.selectedOption === optIndex && optIndex !== question.correct ? ' <span class="text-red-600">✗</span>' : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <div class="mt-4 text-sm text-gray-600">
+                        Waktu: ${userAnswer ? userAnswer.timeSpent : 0} detik
+                    </div>
+                `;
+                content.appendChild(questionDiv);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        function hideDetailedResults() {
+            document.getElementById('detailedResultsModal').classList.add('hidden');
+        }
+
+        function backToHome() {
+            // Clean up
+            if (appState.gameListener) {
+                appState.gameListener();
+                appState.gameListener = null;
+            }
+            
+            if (appState.timer) {
+                clearInterval(appState.timer);
+                appState.timer = null;
+            }
+            
+            // Reset game state
+            appState.currentGame = null;
+            appState.currentQuiz = null;
+            appState.currentQuestionIndex = 0;
+            appState.userAnswers = [];
+            
+            // Clear form
+            document.getElementById('gameCodeInput').value = '';
+            
+            showJoinGameSection();
+        }
+
+        // Utility functions
+        function loadRecentGames() {
+            const container = document.getElementById('recentGamesContainer');
+            container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">Belum ada riwayat quiz</div>';
+        }
+
+        // Auto-uppercase game code input
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameCodeInput = document.getElementById('gameCodeInput');
+            if (gameCodeInput) {
+                gameCodeInput.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+                
+                gameCodeInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        joinGame();
+                    }
+                });
+            }
+            
+            // Initialize database
+            db.init();
+        });
+    </script>
+</body>
+</html>
